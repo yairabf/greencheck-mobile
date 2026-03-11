@@ -7,6 +7,7 @@ type Extra = {
   firebaseStorageBucket?: string;
   firebaseMessagingSenderId?: string;
   firebaseAppId?: string;
+  enableClientPush?: string;
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
@@ -18,6 +19,14 @@ export const env = {
   firebaseStorageBucket: extra.firebaseStorageBucket ?? '',
   firebaseMessagingSenderId: extra.firebaseMessagingSenderId ?? '',
   firebaseAppId: extra.firebaseAppId ?? '',
+  enableClientPush: extra.enableClientPush ?? 'false',
+  authTestMode: (extra as any).authTestMode ?? process.env.EXPO_PUBLIC_AUTH_TEST_MODE ?? 'false',
 } as const;
 
 export const hasFirebaseEnv = Object.values(env).every(Boolean);
+
+
+export const flags = {
+  enableClientPush: String(env.enableClientPush).toLowerCase() === 'true',
+  authTestMode: String(env.authTestMode).toLowerCase() === 'true',
+} as const;
