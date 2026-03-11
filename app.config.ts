@@ -15,6 +15,10 @@ const config: ExpoConfig = {
     firebaseStorageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
     firebaseMessagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     firebaseAppId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    enableClientPush: process.env.EXPO_PUBLIC_ENABLE_CLIENT_PUSH,
+    eas: {
+      projectId: '70701b87-2e3e-4bde-b443-b6c100b7a5d8',
+    },
   },
 };
 
