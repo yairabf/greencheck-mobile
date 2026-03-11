@@ -8,6 +8,12 @@ const config: ExpoConfig = {
   version: '1.0.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
+  ios: {
+    bundleIdentifier: 'com.yairabc.greencheckmobile',
+  },
+  android: {
+    package: 'com.yairabc.greencheckmobile',
+  },
   extra: {
     firebaseApiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
     firebaseAuthDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
