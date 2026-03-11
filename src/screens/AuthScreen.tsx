@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
@@ -12,6 +12,17 @@ export function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { sendOtp, verifyOtp, confirmation } = useAuth();
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    let el = document.getElementById('recaptcha-container');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'recaptcha-container';
+      el.style.display = 'none';
+      document.body.appendChild(el);
+    }
+  }, []);
 
   async function onSendOtp() {
     setError(null);
