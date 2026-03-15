@@ -44,6 +44,7 @@ export function HomeScreen() {
   const [memberDirectory, setMemberDirectory] = useState<Record<string, { name: string; phone: string }>>({});
   const [refreshing, setRefreshing] = useState(false);
   const webActionHandledRef = useRef(false);
+  const previousNameByUidRef = useRef<Record<string, string>>({});
 
   const activeTeamId = profile?.teamIds?.[0] ?? null;
 
@@ -106,8 +107,9 @@ export function HomeScreen() {
   }
 
   function buildRoster(responseMap: IncidentResponseMap) {
+    const previousNameByUid = previousNameByUidRef.current;
     const rows: RosterMember[] = Object.entries(responseMap).map(([uid, r]) => {
-      const previousName = roster.find((x) => x.uid === uid)?.name;
+      const previousName = previousNameByUid[uid];
       const name =
         normalizeDisplayName(uid, memberDirectory[uid]?.name)
         || normalizeDisplayName(uid, previousName)
@@ -124,6 +126,9 @@ export function HomeScreen() {
       };
     });
     rows.sort((a,b)=>a.name.localeCompare(b.name));
+    const nextMap: Record<string, string> = {};
+    rows.forEach((r) => { nextMap[r.uid] = r.name; });
+    previousNameByUidRef.current = nextMap;
     setRoster(rows);
   }
 
@@ -185,6 +190,7 @@ export function HomeScreen() {
   }
 
   async function onPullRefresh() {
+    if (refreshing) return;
     setRefreshing(true);
     try {
       await refreshProfile();
@@ -293,7 +299,6 @@ export function HomeScreen() {
       (map) => {
         setLiveErr(null);
         setResponseMap(map);
-        void refreshTeamDirectory();
       },
       (e) => setLiveErr(e.message),
     );

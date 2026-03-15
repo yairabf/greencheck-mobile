@@ -9,7 +9,7 @@ import { useI18n } from '../i18n';
 
 export function ProfileScreen() {
   const { user } = useAuth();
-  const { profile, saveProfile } = useProfile();
+  const { profile, saveProfile, saveLocale } = useProfile();
   const { locale, setLocale, t } = useI18n();
   const [name, setName] = useState(profile?.name ?? '');
   const [busy, setBusy] = useState(false);
@@ -39,6 +39,7 @@ export function ProfileScreen() {
     const newLocale = locale === 'en' ? 'he' : 'en';
     try {
       await setLocale(newLocale);
+      await saveLocale(newLocale);
       const langLabel = newLocale === 'en' ? t('profile.english') : t('profile.hebrew');
       setMsg(t('profile.languageUpdated', { lang: langLabel }));
       if (newLocale === 'he' || locale === 'he') {

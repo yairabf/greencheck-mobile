@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { useAuth } from './AuthProvider';
 import type { UserProfile } from '../types/profile';
-import { createUserProfile, getUserProfile, updateUserProfile } from './profile';
+import { createUserProfile, getUserProfile, updateUserLocale, updateUserProfile } from './profile';
 
 type ProfileContextValue = {
   profile: UserProfile | null;
@@ -10,6 +10,7 @@ type ProfileContextValue = {
   refresh: () => Promise<void>;
   completeSetup: (name: string) => Promise<void>;
   saveProfile: (name: string) => Promise<void>;
+  saveLocale: (locale: 'en' | 'he') => Promise<void>;
 };
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
@@ -52,6 +53,11 @@ export function ProfileProvider({ children }: PropsWithChildren) {
       saveProfile: async (name: string) => {
         if (!user) throw new Error('Not authenticated');
         await updateUserProfile(user.uid, { name });
+        await refresh();
+      },
+      saveLocale: async (locale: 'en' | 'he') => {
+        if (!user) throw new Error('Not authenticated');
+        await updateUserLocale(user.uid, locale);
         await refresh();
       },
     }),
