@@ -94,18 +94,32 @@ export function HomeScreen() {
     }
   }
 
+  function normalizeDisplayName(uid: string, rawName: string | undefined) {
+    const n = (rawName || '').trim();
+    if (!n) return '';
+    if (n === uid) return '';
+    if (/^[A-Za-z0-9_-]{20,}$/.test(n)) return '';
+    return n;
+  }
+
   function buildRoster(responseMap: IncidentResponseMap) {
-    const rows: RosterMember[] = Object.entries(responseMap).map(([uid, r]) => ({
-      uid,
-      name:
-        memberDirectory[uid]?.name
-        || (uid === user?.uid ? profile?.name || 'You' : 'Member'),
-      phone:
-        memberDirectory[uid]?.phone
-        || (uid === user?.uid ? profile?.phone || '' : ''),
-      status: r.status,
-      isYou: uid === user?.uid,
-    }));
+    const rows: RosterMember[] = Object.entries(responseMap).map(([uid, r]) => {
+      const previousName = roster.find((x) => x.uid === uid)?.name;
+      const name =
+        normalizeDisplayName(uid, memberDirectory[uid]?.name)
+        || normalizeDisplayName(uid, previousName)
+        || (uid === user?.uid ? profile?.name || 'You' : 'Member');
+
+      return {
+        uid,
+        name,
+        phone:
+          memberDirectory[uid]?.phone
+          || (uid === user?.uid ? profile?.phone || '' : ''),
+        status: r.status,
+        isYou: uid === user?.uid,
+      };
+    });
     rows.sort((a,b)=>a.name.localeCompare(b.name));
     setRoster(rows);
   }
@@ -257,6 +271,7 @@ export function HomeScreen() {
       (map) => {
         setLiveErr(null);
         setResponseMap(map);
+        void refreshTeamDirectory();
       },
       (e) => setLiveErr(e.message),
     );
