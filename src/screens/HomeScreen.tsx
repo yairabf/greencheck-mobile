@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
@@ -23,7 +23,7 @@ import { useT } from '../i18n';
 
 export function HomeScreen() {
   const { signOutUser, user } = useAuth();
-  const { profile } = useProfile();
+  const { profile, refresh: refreshProfile } = useProfile();
   const { status: pushStatus, reason: pushReason, retry: retryPush } = usePush();
   const navigation = useNavigation();
   const hasTeams = !!profile?.teamIds?.length;
@@ -42,6 +42,7 @@ export function HomeScreen() {
   const [busyReminder, setBusyReminder] = useState(false);
   const [responseMap, setResponseMap] = useState<IncidentResponseMap>({});
   const [memberDirectory, setMemberDirectory] = useState<Record<string, { name: string; phone: string }>>({});
+  const [refreshing, setRefreshing] = useState(false);
   const webActionHandledRef = useRef(false);
 
   const activeTeamId = profile?.teamIds?.[0] ?? null;
@@ -178,6 +179,17 @@ export function HomeScreen() {
     }
   }
 
+  async function onPullRefresh() {
+    setRefreshing(true);
+    try {
+      await refreshProfile();
+      await Promise.all([refreshIncident(), refreshTeamDirectory()]);
+      setMsg('Refreshed');
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   useEffect(() => {
     const intent = consumePendingIntent();
     if (!intent) return;
@@ -291,6 +303,10 @@ export function HomeScreen() {
 
   return (
     <AppContainer>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onPullRefresh()} />}
+        contentContainerStyle={{ gap: 10, paddingBottom: 24 }}
+      >
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('home.dashboard')}</Text>
       <Text style={{ color: colors.muted }}>{t('home.hi')} {profile?.name ?? 'teammate'} 👋</Text>
       <StatusCard
@@ -360,6 +376,7 @@ export function HomeScreen() {
         </View>
       ) : null}
       <AppButton label={t('home.signOut')} variant="secondary" onPress={() => void signOutUser()} />
+      </ScrollView>
     </AppContainer>
   );
 }
