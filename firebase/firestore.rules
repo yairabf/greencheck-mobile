@@ -42,9 +42,8 @@ service cloud.firestore {
 
     // Team invites collection
     match /teamInvites/{code} {
-      allow read: if isSignedIn()
-        && inviteDoc(code).data.active == true
-        && isTeamMember(inviteTeamId(code));
+      // Allow signed-in users to read active invites so they can join by code.
+      allow read: if isSignedIn() && resource.data.active == true;
 
       allow create: if isSignedIn()
         && request.resource.data.teamId is string
@@ -103,7 +102,21 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.createdBy == request.auth.uid
         && request.auth.uid in request.resource.data.memberIds;
-      allow update: if isTeamMember(teamId);
+
+      // Existing members can update team normally.
+      // Also allow a signed-in user to join by appending only themselves to memberIds,
+      // while preserving core fields.
+      allow update: if isTeamMember(teamId)
+        || (
+          isSignedIn()
+          && !(request.auth.uid in resource.data.memberIds)
+          && (request.auth.uid in request.resource.data.memberIds)
+          && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+          && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.activeIncidentId == resource.data.activeIncidentId
+        );
       allow delete: if false;
 
       match /incidents/{incidentId} {
