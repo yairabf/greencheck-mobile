@@ -1,6 +1,8 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onRequest } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 const webpush = require('web-push');
+const crypto = require('crypto');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -8,6 +10,8 @@ const db = admin.firestore();
 const WEB_PUSH_PUBLIC_KEY = process.env.WEB_PUSH_VAPID_PUBLIC_KEY || '';
 const WEB_PUSH_PRIVATE_KEY = process.env.WEB_PUSH_VAPID_PRIVATE_KEY || '';
 const WEB_PUSH_SUBJECT = process.env.WEB_PUSH_SUBJECT || 'mailto:yairabc@gmail.com';
+const WEB_PUSH_ACTION_URL = process.env.WEB_PUSH_ACTION_URL || 'https://us-central1-greencheck-fa892.cloudfunctions.net/webPushAction';
+const WEB_PUSH_ACTION_SECRET = process.env.WEB_PUSH_ACTION_SECRET || '';
 
 if (WEB_PUSH_PUBLIC_KEY && WEB_PUSH_PRIVATE_KEY) {
   webpush.setVapidDetails(WEB_PUSH_SUBJECT, WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY);
@@ -36,7 +40,7 @@ async function getDestinationsForUsers(userIds) {
 
       const subscription = d.get('webPushSubscription');
       if (subscription && subscription.endpoint && subscription.keys) {
-        webSubscriptions.push(subscription);
+        webSubscriptions.push({ uid, subscription });
       }
     });
   }
@@ -57,6 +61,34 @@ async function validateRequestOwnership(req) {
     return { ok: false, reason: 'creator_not_team_member' };
   }
   return { ok: true };
+}
+
+function base64url(input) {
+  return Buffer.from(input).toString('base64url');
+}
+
+function signActionToken(payload) {
+  if (!WEB_PUSH_ACTION_SECRET) return '';
+  const encoded = base64url(JSON.stringify(payload));
+  const sig = crypto.createHmac('sha256', WEB_PUSH_ACTION_SECRET).update(encoded).digest('base64url');
+  return `${encoded}.${sig}`;
+}
+
+function verifyActionToken(token) {
+  if (!token || !WEB_PUSH_ACTION_SECRET) return null;
+  const [encoded, sig] = String(token).split('.');
+  if (!encoded || !sig) return null;
+  const expected = crypto.createHmac('sha256', WEB_PUSH_ACTION_SECRET).update(encoded).digest('base64url');
+  if (sig !== expected) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+    if (!payload || typeof payload !== 'object') return null;
+    if (!payload.uid || !payload.teamId || !payload.incidentId || !payload.exp) return null;
+    if (Date.now() > Number(payload.exp)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 async function sendExpo(messages) {
@@ -88,10 +120,10 @@ async function sendExpo(messages) {
   return { attempted: messages.length, sent, failed, errors };
 }
 
-async function sendWebPush(subscriptions, payload) {
-  if (!subscriptions.length) return { attempted: 0, sent: 0, failed: 0, errors: [] };
+async function sendWebPush(destinations, buildPayload) {
+  if (!destinations.length) return { attempted: 0, sent: 0, failed: 0, errors: [] };
   if (!WEB_PUSH_PUBLIC_KEY || !WEB_PUSH_PRIVATE_KEY) {
-    return { attempted: subscriptions.length, sent: 0, failed: subscriptions.length, errors: ['Web push VAPID keys are not configured'] };
+    return { attempted: destinations.length, sent: 0, failed: destinations.length, errors: ['Web push VAPID keys are not configured'] };
   }
 
   let sent = 0;
@@ -99,8 +131,9 @@ async function sendWebPush(subscriptions, payload) {
   const errors = [];
 
   await Promise.all(
-    subscriptions.map(async (subscription) => {
+    destinations.map(async ({ uid, subscription }) => {
       try {
+        const payload = buildPayload(uid);
         await webpush.sendNotification(subscription, JSON.stringify(payload));
         sent += 1;
       } catch (err) {
@@ -110,8 +143,48 @@ async function sendWebPush(subscriptions, payload) {
     })
   );
 
-  return { attempted: subscriptions.length, sent, failed, errors };
+  return { attempted: destinations.length, sent, failed, errors };
 }
+
+exports.webPushAction = onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+
+  const token = req.query.token || req.body?.token;
+  const action = req.query.action || req.body?.action;
+
+  if (!token || !action) return res.status(400).json({ ok: false, error: 'missing_token_or_action' });
+  if (!['green', 'not_green'].includes(String(action))) return res.status(400).json({ ok: false, error: 'invalid_action' });
+
+  const payload = verifyActionToken(String(token));
+  if (!payload) return res.status(401).json({ ok: false, error: 'invalid_or_expired_token' });
+
+  const { uid, teamId, incidentId } = payload;
+  const responseRef = db.collection('teams').doc(teamId).collection('incidents').doc(incidentId).collection('responses').doc(uid);
+  const teamRef = db.collection('teams').doc(teamId);
+
+  try {
+    await db.runTransaction(async (tx) => {
+      const [teamSnap, responseSnap] = await Promise.all([tx.get(teamRef), tx.get(responseRef)]);
+      if (!teamSnap.exists) throw new Error('team_not_found');
+      const activeIncidentId = teamSnap.get('activeIncidentId');
+      if (activeIncidentId !== incidentId) throw new Error('incident_not_active');
+      if (!responseSnap.exists) throw new Error('response_not_found');
+
+      const prevRespondedAt = responseSnap.get('respondedAt') || null;
+      tx.update(responseRef, {
+        status: String(action),
+        respondedAt: prevRespondedAt || admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    return res.status(400).json({ ok: false, error: e?.message || 'action_failed' });
+  }
+});
 
 exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId}', async (event) => {
   const snap = event.data;
@@ -157,19 +230,33 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
     data: { type, teamId, incidentId, ...payload }
   }));
 
-  const webPayload = {
-    title,
-    body,
-    data: { type, teamId, incidentId, ...payload },
-    actions: [
-      { action: 'green', title: '✅ Green' },
-      { action: 'not_green', title: '🟥 Not Green' }
-    ]
-  };
-
   const [expoResult, webResult] = await Promise.all([
     sendExpo(expoMessages),
-    sendWebPush(webSubscriptions, webPayload)
+    sendWebPush(webSubscriptions, (uid) => {
+      const actionToken = signActionToken({
+        uid,
+        teamId,
+        incidentId,
+        exp: Date.now() + 1000 * 60 * 60 * 4,
+      });
+
+      return {
+        title,
+        body,
+        data: {
+          type,
+          teamId,
+          incidentId,
+          ...payload,
+          actionToken,
+          actionUrl: WEB_PUSH_ACTION_URL,
+        },
+        actions: [
+          { action: 'green', title: '✅ Green' },
+          { action: 'not_green', title: '🟥 Not Green' }
+        ]
+      };
+    })
   ]);
 
   await snap.ref.update({

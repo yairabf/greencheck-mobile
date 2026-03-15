@@ -38,16 +38,35 @@ self.addEventListener('notificationclick', (event) => {
   const action = event.action || 'open';
   const targetUrl = `/?notifAction=${encodeURIComponent(action)}${teamId}${incidentId}`;
 
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if ('focus' in client) {
-          client.navigate(targetUrl);
-          return client.focus();
-        }
+  async function openApp() {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clients) {
+      if ('focus' in client) {
+        client.navigate(targetUrl);
+        return client.focus();
       }
-      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
-      return undefined;
-    }),
-  );
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+    return undefined;
+  }
+
+  event.waitUntil((async () => {
+    if ((action === 'green' || action === 'not_green') && data.actionUrl && data.actionToken) {
+      try {
+        const u = `${data.actionUrl}?token=${encodeURIComponent(data.actionToken)}&action=${encodeURIComponent(action)}`;
+        const res = await fetch(u, { method: 'POST', mode: 'cors' });
+        if (res.ok) {
+          await self.registration.showNotification('GreenCheck', {
+            body: action === 'green' ? 'Reported: Green ✅' : 'Reported: Not Green 🟥',
+            icon: '/favicon.ico',
+          });
+          return;
+        }
+      } catch {
+        // fall through to open-app flow
+      }
+    }
+
+    await openApp();
+  })());
 });
