@@ -140,7 +140,10 @@ service cloud.firestore {
 
         match /responses/{uid} {
           allow read: if isTeamMember(teamId);
-          allow create, update: if isTeamMember(teamId) && request.auth.uid == uid;
+          // Incident trigger initializes response docs for all members.
+          // So any team member may create response docs, but updates remain self-only.
+          allow create: if isTeamMember(teamId);
+          allow update: if isTeamMember(teamId) && request.auth.uid == uid;
           allow delete: if false;
         }
       }
