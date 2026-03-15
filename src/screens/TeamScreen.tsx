@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
 import { MemberRow } from '../components/MemberRow';
@@ -12,6 +13,7 @@ import { getTeamMembers, type TeamMember } from '../services/teamMembers';
 import { useT } from '../i18n';
 
 export function TeamScreen() {
+  const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { profile } = useProfile();
   const t = useT();
@@ -63,12 +65,22 @@ export function TeamScreen() {
 
       <View style={{ gap: 10 }}>
         <AppButton
+          label={t('home.createTeam')}
+          variant="secondary"
+          onPress={() => navigation.navigate('CreateTeam')}
+        />
+        <AppButton
+          label={t('home.joinTeam')}
+          variant="secondary"
+          onPress={() => navigation.navigate('JoinTeam')}
+        />
+        <AppButton
           label={busy ? t('common.loading') : t('team.inviteMember')}
           variant="secondary"
           onPress={() => void onGenerateInvite()}
         />
         {invite ? <Text style={{ color: colors.text }}>{t('joinTeam.inviteCode')}: {invite}</Text> : null}
-        <AppButton label={t('common.loading')} variant="secondary" onPress={() => void loadMembers()} />
+        <AppButton label="Refresh team" variant="secondary" onPress={() => void loadMembers()} />
       </View>
 
       {loadingMembers ? <ActivityIndicator color={colors.primary} /> : null}
