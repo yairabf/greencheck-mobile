@@ -84,7 +84,10 @@ export function IncidentHistoryScreen() {
               style={styles.card}
               onPress={() => setExpanded(isOpen ? null : r.id)}
             >
-              <Text style={styles.id}>#{r.id.slice(0, 8)} • {r.status.toUpperCase()}</Text>
+              <View style={styles.idRow}>
+                <Text style={styles.id}>#{r.id.slice(0, 8)} • {r.status.toUpperCase()}</Text>
+                {r.status === 'closed' && r.allSafe ? <Text style={styles.safeBadge}>{t('history.safeBadge')}</Text> : null}
+              </View>
               <Text style={styles.meta}>Triggered: {formatTs(r.triggeredAt)}</Text>
               {isOpen ? (
                 <View style={{ gap: 4 }}>
@@ -111,6 +114,22 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 4,
   },
+  idRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   id: { color: colors.text, fontWeight: '700' },
+  safeBadge: {
+    color: '#fff',
+    backgroundColor: '#1f5f2a',
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    fontSize: 11,
+    fontWeight: '700',
+    overflow: 'hidden',
+  },
   meta: { color: colors.muted, fontSize: 12 },
 });

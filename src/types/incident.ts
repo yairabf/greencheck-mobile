@@ -7,4 +7,5 @@ export type Incident = {
   endedBy?: string | null;
   endedAt?: unknown;
   autoClosed: boolean;
+  allSafe?: boolean;
 };

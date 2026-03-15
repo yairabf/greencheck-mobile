@@ -65,6 +65,7 @@ function fromIncident(teamId: string, id: string, data: DocumentData): Incident 
     endedBy: (data.endedBy as string | null) ?? null,
     endedAt: data.endedAt,
     autoClosed: Boolean(data.autoClosed),
+    allSafe: Boolean(data.allSafe),
   };
 }
 
@@ -245,6 +246,7 @@ export async function autoCloseIfComplete(teamId: string, incidentId: string): P
       endedBy: 'system:auto',
       endedAt: serverTimestamp(),
       autoClosed: true,
+      allSafe: !hasNotGreen,
     });
 
     tx.update(tRef, {
@@ -292,6 +294,7 @@ export async function endSafetyCheck(
       endedBy: endedByUid,
       endedAt: serverTimestamp(),
       autoClosed: false,
+      allSafe: false,
     });
 
     tx.update(tRef, {

@@ -110,6 +110,7 @@ export const strings = {
   'history.auto': { en: 'Auto', he: 'אוטומטי' },
   'history.manual': { en: 'Manual', he: 'ידני' },
   'history.endedBy': { en: 'Ended by', he: 'נסגר על ידי' },
+  'history.safeBadge': { en: 'ALL SAFE', he: 'כולם בטוחים' },
 
   // Metrics screen
   'metrics.title': { en: 'Metrics', he: 'מדדים' },
