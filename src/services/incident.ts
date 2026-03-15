@@ -13,6 +13,7 @@ import {
 import { getFirebaseServices } from './firebase';
 import { notifyTeamSafetyCheckClosed } from './notify';
 import { logEvent } from './observability';
+import { getActiveTeamMemberIds } from './teamMembers';
 import type { Incident } from '../types/incident';
 
 
@@ -91,8 +92,8 @@ export async function triggerSafetyCheck(teamId: string, uid: string): Promise<s
       autoClosed: false,
     });
 
-    const memberIds = Array.isArray(tData.memberIds) ? tData.memberIds : [];
-    for (const memberUid of memberIds) {
+    const activeMemberIds = await getActiveTeamMemberIds(teamId);
+    for (const memberUid of activeMemberIds) {
       const rRef = doc(incidentsCol(teamId), iRef.id, 'responses', String(memberUid));
       tx.set(rRef, {
         status: 'no_response',

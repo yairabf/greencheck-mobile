@@ -134,13 +134,21 @@ service cloud.firestore {
         );
       allow delete: if false;
 
+      match /members/{uid} {
+        allow read: if isTeamMember(teamId);
+        allow create, update: if isTeamMember(teamId)
+          && request.auth.uid == uid
+          && request.resource.data.active is bool;
+        allow delete: if false;
+      }
+
       match /incidents/{incidentId} {
         allow read, create, update: if isTeamMember(teamId);
         allow delete: if false;
 
         match /responses/{uid} {
           allow read: if isTeamMember(teamId);
-          // Incident trigger initializes response docs for all members.
+          // Incident trigger initializes response docs for active members.
           // So any team member may create response docs, but updates remain self-only.
           allow create: if isTeamMember(teamId);
           allow update: if isTeamMember(teamId) && request.auth.uid == uid;

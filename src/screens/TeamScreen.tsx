@@ -9,7 +9,7 @@ import { colors } from '../config/theme';
 import { useAuth } from '../services/AuthProvider';
 import { createTeamInvite } from '../services/invite';
 import { useProfile } from '../services/ProfileProvider';
-import { getTeamMembers, type TeamMember } from '../services/teamMembers';
+import { getTeamMembers, setMyTeamActiveState, type TeamMember } from '../services/teamMembers';
 import { useT } from '../i18n';
 
 export function TeamScreen() {
@@ -23,6 +23,7 @@ export function TeamScreen() {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [teamName, setTeamName] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [busyAvailability, setBusyAvailability] = useState(false);
 
   async function onGenerateInvite() {
     if (!user || !profile?.teamIds?.length) return;
@@ -32,6 +33,19 @@ export function TeamScreen() {
       setInvite(code);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onToggleMyAvailability() {
+    if (!user || !profile?.teamIds?.length) return;
+    const me = members.find((m) => m.uid === user.uid);
+    const nextActive = !(me?.active ?? true);
+    setBusyAvailability(true);
+    try {
+      await setMyTeamActiveState(profile.teamIds[0], user.uid, nextActive);
+      await loadMembers();
+    } finally {
+      setBusyAvailability(false);
     }
   }
 
@@ -60,9 +74,14 @@ export function TeamScreen() {
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('team.title')}</Text>
       <StatusCard
         title={t('team.members')}
-        subtitle={teamName ? `${teamName} • ${members.length}` : t('team.yourTeam')}
+        subtitle={teamName ? `${teamName} • ${members.filter((m) => m.active).length} active / ${members.length} total` : t('team.yourTeam')}
       />
       <Text style={{ color: colors.muted, fontSize: 13 }}>{t('home.teammates')}</Text>
+      <AppButton
+        label={busyAvailability ? t('common.loading') : ((members.find((m) => m.uid === user?.uid)?.active ?? true) ? 'Set me Inactive' : 'Set me Active')}
+        variant="secondary"
+        onPress={() => void onToggleMyAvailability()}
+      />
 
       {loadingMembers ? <ActivityIndicator color={colors.primary} /> : null}
       {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
@@ -75,6 +94,7 @@ export function TeamScreen() {
             phone={m.phone}
             isCreator={m.isCreator}
             isYou={m.uid === user?.uid}
+            active={m.active}
           />
         ))}
       </View>

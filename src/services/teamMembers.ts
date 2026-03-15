@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getFirebaseServices } from './firebase';
 import type { Team } from '../types/team';
 import type { UserProfile } from '../types/profile';
@@ -8,6 +8,7 @@ export type TeamMember = {
   name: string;
   phone: string;
   isCreator: boolean;
+  active: boolean;
 };
 
 function toTeam(id: string, data: Record<string, unknown>): Team {
@@ -40,11 +41,18 @@ export async function getTeamMembers(teamId: string) {
 
   const team = toTeam(teamSnap.id, teamSnap.data() as Record<string, unknown>);
 
+  const memberSettingsSnap = await getDocs(collection(firestore, 'teams', teamId, 'members'));
+  const activeMap: Record<string, boolean> = {};
+  memberSettingsSnap.forEach((d) => {
+    const row = d.data() as Record<string, unknown>;
+    activeMap[d.id] = row.active === false ? false : true;
+  });
+
   const memberProfiles = await Promise.all(
     team.memberIds.map(async (uid) => {
       const s = await getDoc(doc(firestore, 'users', uid));
       if (!s.exists()) {
-        return { uid, name: 'Unknown member', phone: '', isCreator: uid === team.createdBy };
+        return { uid, name: 'Unknown member', phone: '', isCreator: uid === team.createdBy, active: activeMap[uid] ?? true };
       }
       const p = toProfile(uid, s.data() as Record<string, unknown>);
       return {
@@ -52,6 +60,7 @@ export async function getTeamMembers(teamId: string) {
         name: p.name || 'Unnamed',
         phone: p.phone,
         isCreator: uid === team.createdBy,
+        active: activeMap[uid] ?? true,
       };
     }),
   );
@@ -63,4 +72,18 @@ export async function getTeamMembers(teamId: string) {
   });
 
   return { team, members: memberProfiles };
+}
+
+export async function getActiveTeamMemberIds(teamId: string): Promise<string[]> {
+  const { members } = await getTeamMembers(teamId);
+  return members.filter((m) => m.active).map((m) => m.uid);
+}
+
+export async function setMyTeamActiveState(teamId: string, uid: string, active: boolean): Promise<void> {
+  const { firestore } = getFirebaseServices();
+  await setDoc(
+    doc(firestore, 'teams', teamId, 'members', uid),
+    { active, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
 }

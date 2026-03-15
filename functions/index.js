@@ -25,7 +25,18 @@ async function getTeamMemberIds(teamId) {
   const team = await db.collection('teams').doc(teamId).get();
   if (!team.exists) return [];
   const memberIds = team.get('memberIds');
-  return Array.isArray(memberIds) ? memberIds : [];
+  const all = Array.isArray(memberIds) ? memberIds : [];
+
+  const membersSnap = await db.collection('teams').doc(teamId).collection('members').get();
+  if (membersSnap.empty) return all;
+
+  const inactive = new Set();
+  membersSnap.forEach((d) => {
+    const row = d.data() || {};
+    if (row.active === false) inactive.add(d.id);
+  });
+
+  return all.filter((uid) => !inactive.has(uid));
 }
 
 async function getDestinationsForUsers(userIds) {

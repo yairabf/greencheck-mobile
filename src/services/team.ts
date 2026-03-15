@@ -57,6 +57,11 @@ export async function createTeamForUser(uid: string, teamName: string): Promise<
       updatedAt: serverTimestamp(),
     });
 
+    tx.set(doc(firestore, 'teams', newRef.id, 'members', uid), {
+      active: true,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+
     const u = userSnap.data();
     const existingTeamIds = Array.isArray(u.teamIds) ? u.teamIds : [];
     if (existingTeamIds.includes(newRef.id)) {

@@ -95,6 +95,7 @@ export async function joinTeamWithCode(uid: string, code: string): Promise<strin
         updatedAt: serverTimestamp(),
       });
       tx.update(tRef, { memberIds: arrayUnion(uid), updatedAt: serverTimestamp() });
+      tx.set(doc(firestore, 'teams', teamId, 'members', uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
       return teamId;
     }
 
@@ -110,6 +111,7 @@ export async function joinTeamWithCode(uid: string, code: string): Promise<strin
     // We intentionally do not read team doc here because non-members cannot read it by rules.
     tx.update(tRef, { memberIds: arrayUnion(uid), updatedAt: serverTimestamp() });
     tx.update(uRef, { teamIds: arrayUnion(teamId), updatedAt: serverTimestamp() });
+    tx.set(doc(firestore, 'teams', teamId, 'members', uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
     return teamId;
   });
 }

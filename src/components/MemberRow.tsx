@@ -6,9 +6,10 @@ type Props = {
   phone: string;
   isCreator?: boolean;
   isYou?: boolean;
+  active?: boolean;
 };
 
-export function MemberRow({ name, phone, isCreator, isYou }: Props) {
+export function MemberRow({ name, phone, isCreator, isYou, active = true }: Props) {
   return (
     <View style={styles.row}>
       <View style={{ flex: 1 }}>
@@ -17,6 +18,7 @@ export function MemberRow({ name, phone, isCreator, isYou }: Props) {
         </Text>
         <Text style={styles.phone}>{phone || 'No phone'}</Text>
       </View>
+      <Text style={[styles.badge, active ? styles.activeBadge : styles.inactiveBadge]}>{active ? 'Active' : 'Inactive'}</Text>
       {isCreator ? <Text style={styles.badge}>Creator</Text> : null}
     </View>
   );
@@ -45,5 +47,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     fontSize: 11,
     overflow: 'hidden',
+  },
+  activeBadge: {
+    backgroundColor: '#1f5f2a',
+  },
+  inactiveBadge: {
+    backgroundColor: '#5f2a2a',
   },
 });

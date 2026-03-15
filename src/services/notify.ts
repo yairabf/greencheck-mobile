@@ -12,8 +12,20 @@ async function getTeamMemberIds(teamId: string): Promise<string[]> {
   const { firestore } = getFirebaseServices();
   const teamSnap = await getDoc(doc(firestore, 'teams', teamId));
   if (!teamSnap.exists()) return [];
-  const memberIds = teamSnap.data().memberIds;
-  return Array.isArray(memberIds) ? memberIds.map(String) : [];
+  const memberIds: string[] = Array.isArray(teamSnap.data().memberIds)
+    ? teamSnap.data().memberIds.map((x: unknown) => String(x))
+    : [];
+
+  const membersSnap = await getDocs(collection(firestore, 'teams', teamId, 'members'));
+  if (membersSnap.empty) return memberIds;
+
+  const inactive = new Set<string>();
+  membersSnap.forEach((d) => {
+    const row = d.data() as Record<string, unknown>;
+    if (row.active === false) inactive.add(d.id);
+  });
+
+  return memberIds.filter((uid) => !inactive.has(uid));
 }
 
 async function enqueuePushDispatch(params: {
