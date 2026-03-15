@@ -39,7 +39,7 @@ const config: ExpoConfig = {
   web: {
     favicon: './assets/favicon.png',
     bundler: 'metro',
-    output: 'static',
+    output: 'single',
     name: 'GreenCheck',
     shortName: 'GreenCheck',
     themeColor: '#4CAF50',
