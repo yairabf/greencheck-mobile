@@ -43,8 +43,13 @@ async function getDestinationsForUsers(userIds) {
   const expoTokens = [];
   const webSubscriptions = [];
 
-  for (const uid of userIds) {
-    const snap = await db.collection('users').doc(uid).collection('devices').where('active', '==', true).get();
+  const snaps = await Promise.all(
+    userIds.map((uid) => db.collection('users').doc(uid).collection('devices').where('active', '==', true).get())
+  );
+
+  for (let i = 0; i < snaps.length; i += 1) {
+    const uid = userIds[i];
+    const snap = snaps[i];
     snap.forEach((d) => {
       const token = d.get('pushToken');
       if (isExpoToken(token)) expoTokens.push(token);
