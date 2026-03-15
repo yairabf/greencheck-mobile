@@ -23,7 +23,14 @@ export const env = {
   authTestMode: (extra as any).authTestMode ?? process.env.EXPO_PUBLIC_AUTH_TEST_MODE ?? 'false',
 } as const;
 
-export const hasFirebaseEnv = Object.values(env).every(Boolean);
+export const hasFirebaseEnv = [
+  env.firebaseApiKey,
+  env.firebaseAuthDomain,
+  env.firebaseProjectId,
+  env.firebaseStorageBucket,
+  env.firebaseMessagingSenderId,
+  env.firebaseAppId,
+].every(Boolean);
 
 
 export const flags = {

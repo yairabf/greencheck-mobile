@@ -1,4 +1,5 @@
-export { I18nProvider, useI18n } from './I18nProvider';
+import { I18nProvider, useI18n } from './I18nProvider';
+export { I18nProvider, useI18n };
 export { strings, type StringKey } from './strings';
 
 export function useT() {

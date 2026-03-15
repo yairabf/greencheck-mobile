@@ -2,6 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { AppTabs } from './AppTabs';
 import { AuthStack } from './AuthStack';
 import { useAuth } from '../services/AuthProvider';
+import { navigationRef } from '../services/nav';
 
 function RootFlow() {
   const { user, loading, enabled } = useAuth();
@@ -19,7 +20,7 @@ function RootFlow() {
 
 export function RootNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <RootFlow />
     </NavigationContainer>
   );

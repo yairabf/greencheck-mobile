@@ -54,7 +54,7 @@ export function I18nProvider({ children }: PropsWithChildren) {
       const translation = strings[key]?.[locale] ?? strings[key]?.en ?? key;
       if (!params) return translation;
 
-      let result = translation;
+      let result: string = translation;
       for (const [param, value] of Object.entries(params)) {
         result = result.replace(`{${param}}`, String(value));
       }

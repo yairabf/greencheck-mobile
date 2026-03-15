@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View, Alert } from 'react-native';
-import * as Updates from 'expo-updates';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
 import { colors, radius, spacing } from '../config/theme';
@@ -49,17 +48,9 @@ export function ProfileScreen() {
         },
         {
           text: t('profile.restart'),
-          onPress: async () => {
+          onPress: () => {
             setLocale(newLocale);
-            try {
-              if (Updates.isEnabled) {
-                await Updates.reloadAsync();
-              } else {
-                Alert.alert('Please restart the app manually');
-              }
-            } catch (error) {
-              Alert.alert('Please restart the app manually');
-            }
+            Alert.alert('Language changed', 'Please restart the app manually to fully apply language updates.');
           },
         },
       ]

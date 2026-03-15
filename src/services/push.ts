@@ -6,15 +6,17 @@ import type { User } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { getFirebaseServices } from './firebase';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 function deviceIdSyncFallback(): string {
   return Application.applicationId ?? `device-${Platform.OS}`;
@@ -33,6 +35,10 @@ async function resolveDeviceId(): Promise<string> {
 }
 
 export async function registerPushToken(user: User): Promise<{ ok: boolean; reason?: string }> {
+  if (Platform.OS === 'web') {
+    return { ok: false, reason: 'Push notifications are not enabled on web in this app.' };
+  }
+
   if (!Device.isDevice) {
     return { ok: false, reason: 'Push notifications require a physical device.' };
   }

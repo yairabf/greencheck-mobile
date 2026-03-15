@@ -8,6 +8,12 @@ const config: ExpoConfig = {
   version: '1.0.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
+  icon: './assets/icon.png',
+  splash: {
+    image: './assets/splash-icon.png',
+    resizeMode: 'contain',
+    backgroundColor: '#ffffff',
+  },
   ios: {
     bundleIdentifier: 'com.yairabc.greencheckmobile',
     buildNumber: '8',
@@ -18,9 +24,9 @@ const config: ExpoConfig = {
   android: {
     package: 'com.yairabc.greencheckmobile',
     versionCode: 8,
-    useNextNotificationsApi: true,
   },
   plugins: [
+    'expo-font',
     [
       'expo-notifications',
       {
@@ -30,6 +36,22 @@ const config: ExpoConfig = {
       },
     ],
   ],
+  web: {
+    favicon: './assets/favicon.png',
+    bundler: 'metro',
+    output: 'static',
+    name: 'GreenCheck',
+    shortName: 'GreenCheck',
+    themeColor: '#4CAF50',
+    backgroundColor: '#ffffff',
+    display: 'standalone',
+  },
+  updates: {
+    url: 'https://u.expo.dev/70701b87-2e3e-4bde-b443-b6c100b7a5d8',
+  },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   extra: {
     firebaseApiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
     firebaseAuthDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,

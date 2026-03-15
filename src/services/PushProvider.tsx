@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import { Platform } from 'react-native';
 import { useAuth } from './AuthProvider';
 import { useProfile } from './ProfileProvider';
 import * as Notifications from 'expo-notifications';
@@ -45,6 +46,8 @@ export function PushProvider({ children }: PropsWithChildren) {
 
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
+
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const intent = parseNotificationIntent(response.notification.request.content.data);
       if (!intent) return;
