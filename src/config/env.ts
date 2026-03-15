@@ -21,7 +21,8 @@ export const env = {
   firebaseMessagingSenderId: extra.firebaseMessagingSenderId ?? '',
   firebaseAppId: extra.firebaseAppId ?? '',
   enableClientPush: extra.enableClientPush ?? 'false',
-  webPushVapidPublicKey: extra.webPushVapidPublicKey ?? '',
+  webPushVapidPublicKey:
+    extra.webPushVapidPublicKey ?? process.env.EXPO_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY ?? '',
   authTestMode: (extra as any).authTestMode ?? process.env.EXPO_PUBLIC_AUTH_TEST_MODE ?? 'false',
 } as const;
 
