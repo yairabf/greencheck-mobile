@@ -62,6 +62,26 @@ export function TeamScreen() {
         title={t('team.members')}
         subtitle={teamName ? `${teamName} • ${members.length}` : t('team.yourTeam')}
       />
+      <Text style={{ color: colors.muted, fontSize: 13 }}>Teammates</Text>
+
+      {loadingMembers ? <ActivityIndicator color={colors.primary} /> : null}
+      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
+
+      <View style={{ gap: 10 }}>
+        {members.map((m) => (
+          <MemberRow
+            key={m.uid}
+            name={m.name}
+            phone={m.phone}
+            isCreator={m.isCreator}
+            isYou={m.uid === user?.uid}
+          />
+        ))}
+      </View>
+
+      {!loadingMembers && members.length === 0 ? (
+        <Text style={{ color: colors.muted }}>{t('team.yourTeam')}</Text>
+      ) : null}
 
       <View style={{ gap: 10 }}>
         <AppButton
@@ -81,24 +101,6 @@ export function TeamScreen() {
         />
         {invite ? <Text style={{ color: colors.text }}>{t('joinTeam.inviteCode')}: {invite}</Text> : null}
         <AppButton label="Refresh team" variant="secondary" onPress={() => void loadMembers()} />
-      </View>
-
-      {loadingMembers ? <ActivityIndicator color={colors.primary} /> : null}
-      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
-      {!loadingMembers && members.length === 0 ? (
-        <Text style={{ color: colors.muted }}>{t('team.yourTeam')}</Text>
-      ) : null}
-
-      <View style={{ gap: 10 }}>
-        {members.map((m) => (
-          <MemberRow
-            key={m.uid}
-            name={m.name}
-            phone={m.phone}
-            isCreator={m.isCreator}
-            isYou={m.uid === user?.uid}
-          />
-        ))}
       </View>
     </AppContainer>
   );

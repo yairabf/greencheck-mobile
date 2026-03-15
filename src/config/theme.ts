@@ -1,12 +1,12 @@
 export const colors = {
-  bg: '#0B1220',
-  card: '#111A2E',
-  cardAlt: '#16213A',
-  text: '#E6ECFF',
-  muted: '#A9B6D3',
+  bg: '#131A2A',
+  card: '#1B2438',
+  cardAlt: '#24314A',
+  text: '#F2F6FF',
+  muted: '#B8C4DE',
   primary: '#4CAF50',
   danger: '#EF5350',
-  border: '#243455',
+  border: '#2F3E5D',
 } as const;
 
 export const spacing = {
