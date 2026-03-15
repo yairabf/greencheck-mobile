@@ -118,13 +118,13 @@ function verifyActionToken(token) {
   }
 }
 
-function localizedCopy(locale, type, payload, reporterName) {
+function localizedCopy(locale, type, payload, reporterName, actorName) {
   const he = locale === 'he';
 
   if (type === 'safety_check_started') {
     return {
       title: he ? 'בדיקת בטיחות הופעלה' : 'Safety Check Started',
-      body: he ? 'הקש/י כדי לדווח סטטוס עכשיו.' : 'Tap to report your status now.',
+      body: he ? `הופעל על ידי ${actorName}. הקש/י כדי לדווח סטטוס.` : `Triggered by ${actorName}. Tap to report your status now.`,
     };
   }
 
@@ -290,8 +290,17 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
     }
   }
 
+  let actorName = 'a teammate';
+  if (createdBy && createdBy !== 'system:auto') {
+    const actorSnap = await db.collection('users').doc(String(createdBy)).get();
+    if (actorSnap.exists) {
+      const nm = actorSnap.get('name');
+      if (typeof nm === 'string' && nm.trim()) actorName = nm.trim();
+    }
+  }
+
   const expoMessages = expoDestinations.map(({ token, locale }) => {
-    const copy = localizedCopy(locale, type, payload, reporterName);
+    const copy = localizedCopy(locale, type, payload, reporterName, actorName);
     return {
       to: token,
       sound: 'default',
@@ -304,7 +313,7 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
   const [expoResult, webResult] = await Promise.all([
     sendExpo(expoMessages),
     sendWebPush(webSubscriptions, ({ uid, locale }) => {
-      const copy = localizedCopy(locale, type, payload, reporterName);
+      const copy = localizedCopy(locale, type, payload, reporterName, actorName);
       const isActionable = type === 'safety_check_started' || type === 'safety_check_reminder';
       const actionToken = isActionable ? signActionToken({
         uid,
