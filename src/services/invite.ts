@@ -84,7 +84,19 @@ export async function joinTeamWithCode(uid: string, code: string): Promise<strin
     const uRef = userRef(uid);
 
     const userSnap = await tx.get(uRef);
-    if (!userSnap.exists()) throw new Error('User profile not found.');
+
+    if (!userSnap.exists()) {
+      // Auto-bootstrap a minimal profile for legacy/new users before joining team.
+      tx.set(uRef, {
+        name: '',
+        phone: '',
+        teamIds: [teamId],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      tx.update(tRef, { memberIds: arrayUnion(uid), updatedAt: serverTimestamp() });
+      return teamId;
+    }
 
     const userData = userSnap.data();
     const teamIds = Array.isArray(userData.teamIds) ? userData.teamIds : [];
