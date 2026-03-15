@@ -21,11 +21,11 @@ export function CreateTeamScreen() {
   async function onCreate() {
     const trimmed = name.trim();
     if (trimmed.length < 3) {
-      setMsg('Team name must be at least 3 characters.');
+      setMsg(t('createTeam.nameTooShort'));
       return;
     }
     if (!user) {
-      setMsg('You must be signed in.');
+      setMsg(t('createTeam.mustSignIn'));
       return;
     }
 
@@ -34,10 +34,10 @@ export function CreateTeamScreen() {
     try {
       const id = await createTeamForUser(user.uid, trimmed);
       await refresh();
-      setMsg(`Team created: ${id}`);
+      setMsg(t('createTeam.created', { id }));
       setName('');
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Failed to create team');
+      setMsg(e instanceof Error ? e.message : t('createTeam.failed'));
     } finally {
       setBusy(false);
     }

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '../config/theme';
+import { useT } from '../i18n';
 
 type Props = {
   name: string;
@@ -10,16 +11,18 @@ type Props = {
 };
 
 export function MemberRow({ name, phone, isCreator, isYou, active = true }: Props) {
+  const t = useT();
+
   return (
     <View style={styles.row}>
       <View style={{ flex: 1 }}>
         <Text style={styles.name}>
           {name} {isYou ? '(You)' : ''}
         </Text>
-        <Text style={styles.phone}>{phone || 'No phone'}</Text>
+        <Text style={styles.phone}>{phone || t('team.noPhone')}</Text>
       </View>
-      <Text style={[styles.badge, active ? styles.activeBadge : styles.inactiveBadge]}>{active ? 'Active' : 'Inactive'}</Text>
-      {isCreator ? <Text style={styles.badge}>Creator</Text> : null}
+      <Text style={[styles.badge, active ? styles.activeBadge : styles.inactiveBadge]}>{active ? t('team.statusActive') : t('team.statusInactive')}</Text>
+      {isCreator ? <Text style={styles.badge}>{t('team.creator')}</Text> : null}
     </View>
   );
 }

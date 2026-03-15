@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '../config/theme';
+import { useT } from '../i18n';
 
 export type RosterMember = {
   uid: string;
@@ -10,8 +11,9 @@ export type RosterMember = {
 };
 
 export function IncidentRoster({ members }: { members: RosterMember[] }) {
+  const t = useT();
   if (members.length === 0) {
-    return <Text style={styles.empty}>No roster data yet.</Text>;
+    return <Text style={styles.empty}>{t('home.noActiveCheck')}</Text>;
   }
 
   return (
@@ -20,7 +22,7 @@ export function IncidentRoster({ members }: { members: RosterMember[] }) {
         <View key={m.uid} style={styles.row}>
           <View style={{ flex: 1 }}>
             <Text style={styles.name}>
-              {m.name} {m.isYou ? '(You)' : ''}
+              {m.name} {m.isYou ? `(${t('common.you')})` : ''}
             </Text>
             <Text style={styles.phone}>{m.phone || 'No phone'}</Text>
           </View>

@@ -58,7 +58,7 @@ export function TeamScreen() {
       setMembers(list);
       setTeamName(team?.name ?? '');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load members');
+      setError(e instanceof Error ? e.message : t('team.failedLoadMembers'));
     } finally {
       setLoadingMembers(false);
     }
@@ -74,11 +74,11 @@ export function TeamScreen() {
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('team.title')}</Text>
       <StatusCard
         title={t('team.members')}
-        subtitle={teamName ? `${teamName} • ${members.filter((m) => m.active).length} active / ${members.length} total` : t('team.yourTeam')}
+        subtitle={teamName ? `${teamName} • ${t('team.activeSummary', { active: members.filter((m) => m.active).length, total: members.length })}` : t('team.yourTeam')}
       />
       <Text style={{ color: colors.muted, fontSize: 13 }}>{t('home.teammates')}</Text>
       <AppButton
-        label={busyAvailability ? t('common.loading') : ((members.find((m) => m.uid === user?.uid)?.active ?? true) ? 'Set me Inactive' : 'Set me Active')}
+        label={busyAvailability ? t('common.loading') : ((members.find((m) => m.uid === user?.uid)?.active ?? true) ? t('team.setMeInactive') : t('team.setMeActive'))}
         variant="secondary"
         onPress={() => void onToggleMyAvailability()}
       />

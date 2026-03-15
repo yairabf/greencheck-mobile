@@ -31,7 +31,7 @@ export function MetricsScreen() {
       const data = await getTeamMetrics(teamId);
       setMetrics(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load metrics');
+      setError(e instanceof Error ? e.message : t('common.failedAction'));
     } finally {
       setLoading(false);
     }

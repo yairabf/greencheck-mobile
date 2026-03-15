@@ -20,16 +20,16 @@ export function ProfileScreen() {
   async function onSave() {
     const trimmed = name.trim();
     if (trimmed.length < 2) {
-      setMsg('Name must be at least 2 characters.');
+      setMsg(t('profile.nameTooShort'));
       return;
     }
     setBusy(true);
     setMsg(null);
     try {
       await saveProfile(trimmed);
-      setMsg('Saved.');
+      setMsg(t('profile.saved'));
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Failed to save profile');
+      setMsg(e instanceof Error ? e.message : t('profile.failedSave'));
     } finally {
       setBusy(false);
     }
@@ -45,7 +45,7 @@ export function ProfileScreen() {
         setMsg((prev) => `${prev ?? ''} ${t('profile.directionHint')}`.trim());
       }
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Failed to change language');
+      setMsg(e instanceof Error ? e.message : t('profile.failedChangeLanguage'));
     }
   }
 

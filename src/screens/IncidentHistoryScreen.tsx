@@ -57,7 +57,7 @@ export function IncidentHistoryScreen() {
       for (const m of memberData.members) map[m.uid] = m.name || 'Member';
       setNamesByUid(map);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load history');
+      setError(e instanceof Error ? e.message : t('history.failedLoad'));
     } finally {
       setLoading(false);
     }
@@ -88,9 +88,9 @@ export function IncidentHistoryScreen() {
               <Text style={styles.meta}>Triggered: {formatTs(r.triggeredAt)}</Text>
               {isOpen ? (
                 <View style={{ gap: 4 }}>
-                  <Text style={styles.meta}>Ended: {formatTs(r.endedAt)}</Text>
-                  <Text style={styles.meta}>Close mode: {r.autoClosed ? 'Auto' : 'Manual'}</Text>
-                  <Text style={styles.meta}>Ended by: {asDisplayName(r.endedBy)}</Text>
+                  <Text style={styles.meta}>{t('history.ended')}: {formatTs(r.endedAt)}</Text>
+                  <Text style={styles.meta}>{t('history.closeMode')}: {r.autoClosed ? t('history.auto') : t('history.manual')}</Text>
+                  <Text style={styles.meta}>{t('history.endedBy')}: {asDisplayName(r.endedBy)}</Text>
                 </View>
               ) : null}
             </Pressable>

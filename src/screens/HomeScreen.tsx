@@ -71,7 +71,7 @@ export function HomeScreen() {
 
   async function onTrigger() {
     if (!activeTeamId || !user) {
-      setMsg('You must be in a team to trigger a safety check.');
+      setMsg(t('home.needTeamToTrigger'));
       return;
     }
     setBusyTrigger(true);
@@ -86,10 +86,10 @@ export function HomeScreen() {
       } else {
         setNotifySummary(`Push attempted ${push.attempted}, sent ${push.sent}, failed ${push.failed}`);
       }
-      setMsg(`Safety check started: ${incidentId}`);
+      setMsg(t('home.safetyCheckStarted', { id: incidentId }));
       await refreshIncident();
     } catch (e) {
-      setMsg(humanizeError(e, 'Failed action.'));
+      setMsg(humanizeError(e, t('common.failedAction')));
     } finally {
       setBusyTrigger(false);
     }
@@ -129,7 +129,7 @@ export function HomeScreen() {
 
   async function onSubmitStatus(status: 'green' | 'not_green') {
     if (!activeTeamId || !incident?.id || !user) {
-      setMsg('No active incident to update.');
+      setMsg(t('home.noActiveIncidentToUpdate'));
       return;
     }
     setBusyStatus(status);
@@ -141,12 +141,12 @@ export function HomeScreen() {
       await refreshIncident();
       const after = await getActiveIncident(activeTeamId);
       if (!after || after.id !== beforeId) {
-        setMsg('Incident auto-closed.');
+        setMsg(t('home.incidentAutoClosed'));
       } else {
-        setMsg(status === 'green' ? 'Marked as Green.' : 'Marked as Not Green.');
+        setMsg(status === 'green' ? t('home.markedGreen') : t('home.markedNotGreen'));
       }
     } catch (e) {
-      setMsg(humanizeError(e, 'Failed action.'));
+      setMsg(humanizeError(e, t('common.failedAction')));
     } finally {
       setBusyStatus(null);
     }
@@ -184,7 +184,7 @@ export function HomeScreen() {
     try {
       await refreshProfile();
       await Promise.all([refreshIncident(), refreshTeamDirectory()]);
-      setMsg('Refreshed');
+      setMsg(t('common.refreshed'));
     } finally {
       setRefreshing(false);
     }
@@ -194,7 +194,7 @@ export function HomeScreen() {
     const intent = consumePendingIntent();
     if (!intent) return;
     if (intent.type.includes('safety_check')) {
-      setIntentMsg(`Opened from notification: ${intent.type}`);
+      setIntentMsg(t('home.openedFromNotificationType', { type: intent.type }));
       void refreshIncident();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,12 +207,12 @@ export function HomeScreen() {
     webActionHandledRef.current = true;
 
     if (!user) {
-      setMsg('Opened from notification. Please sign in to submit your status.');
+      setMsg(t('home.signInToSubmitFromNotification'));
       return;
     }
 
     if (!notifAction.teamId || !notifAction.incidentId) {
-      setMsg('Opened from notification. Missing team/incident context.');
+      setMsg(t('home.missingNotificationContext'));
       return;
     }
 
@@ -221,14 +221,14 @@ export function HomeScreen() {
       void (async () => {
         try {
           await submitMyStatus(notifAction.teamId!, notifAction.incidentId!, user.uid, status);
-          setMsg(status === 'green' ? 'Status submitted from notification: Green.' : 'Status submitted from notification: Not Green.');
+          setMsg(status === 'green' ? t('home.submittedFromNotificationGreen') : t('home.submittedFromNotificationNotGreen'));
           await refreshIncident();
         } catch (e) {
-          setMsg(humanizeError(e, 'Failed to submit status from notification.'));
+          setMsg(humanizeError(e, t('common.failedAction')));
         }
       })();
     } else {
-      setIntentMsg('Opened from notification');
+      setIntentMsg(t('home.openedFromNotification'));
       void refreshIncident();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -236,7 +236,7 @@ export function HomeScreen() {
 
   async function onReminder() {
     if (!activeTeamId || !incident?.id || !user) {
-      setMsg('No active incident for reminder.');
+      setMsg(t('home.noActiveIncidentForReminder'));
       return;
     }
     setBusyReminder(true);
@@ -250,7 +250,7 @@ export function HomeScreen() {
         setNotifySummary(`Reminder attempted ${r.attempted}, sent ${r.sent}, failed ${r.failed}${r.errors[0] ? ` (${r.errors[0]})` : ''}`);
       }
     } catch (e) {
-      setMsg(humanizeError(e, 'Reminder failed'));
+      setMsg(humanizeError(e, t('home.reminderFailed')));
     } finally {
       setBusyReminder(false);
     }
@@ -258,7 +258,7 @@ export function HomeScreen() {
 
   async function onEndCheck() {
     if (!activeTeamId || !incident?.id || !user) {
-      setMsg('No active incident to end.');
+      setMsg(t('home.noActiveIncidentToEnd'));
       return;
     }
 
@@ -268,9 +268,9 @@ export function HomeScreen() {
       const ended = await endSafetyCheck(activeTeamId, incident.id, user.uid);
       if (ended) await logEvent({ teamId: activeTeamId, incidentId: incident.id, type: 'incident_closed_manual', actor: user.uid });
       await refreshIncident();
-      setMsg(ended ? 'Safety check ended.' : 'Incident already closed.');
+      setMsg(ended ? t('home.safetyCheckEnded') : t('home.incidentAlreadyClosed'));
     } catch (e) {
-      setMsg(humanizeError(e, 'Failed action.'));
+      setMsg(humanizeError(e, t('common.failedAction')));
     } finally {
       setBusyEnd(false);
     }

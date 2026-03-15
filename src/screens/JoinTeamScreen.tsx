@@ -22,7 +22,7 @@ export function JoinTeamScreen() {
     if (!user) return;
     const normalized = code.trim().toUpperCase();
     if (normalized.length < 4) {
-      setMsg('Enter a valid invite code.');
+      setMsg(t('joinTeam.invalidCode'));
       return;
     }
     setBusy(true);
@@ -30,10 +30,10 @@ export function JoinTeamScreen() {
     try {
       const teamId = await joinTeamWithCode(user.uid, normalized);
       await refresh();
-      setMsg(`Joined team: ${teamId}`);
+      setMsg(t('joinTeam.joined', { id: teamId }));
       setCode('');
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Failed to join team');
+      setMsg(e instanceof Error ? e.message : t('joinTeam.failed'));
     } finally {
       setBusy(false);
     }
@@ -51,7 +51,7 @@ export function JoinTeamScreen() {
         autoCapitalize="characters"
         value={code}
         onChangeText={setCode}
-        placeholder="ABC123"
+        placeholder={t('joinTeam.codePlaceholder')}
         placeholderTextColor={colors.muted}
       />
       <AppButton label={busy ? t('joinTeam.joining') : t('joinTeam.join')} onPress={onJoin} />
