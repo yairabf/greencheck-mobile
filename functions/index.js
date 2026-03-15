@@ -160,7 +160,11 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
   const webPayload = {
     title,
     body,
-    data: { type, teamId, incidentId, ...payload }
+    data: { type, teamId, incidentId, ...payload },
+    actions: [
+      { action: 'green', title: '✅ Green' },
+      { action: 'not_green', title: '🟥 Not Green' }
+    ]
   };
 
   const [expoResult, webResult] = await Promise.all([

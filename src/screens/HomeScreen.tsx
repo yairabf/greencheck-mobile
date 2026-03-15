@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AppButton } from '../components/AppButton';
@@ -12,6 +12,7 @@ import { triggerSafetyCheck, getActiveIncident, getIncidentResponseCounts, submi
 import { useProfile } from '../services/ProfileProvider';
 import { usePush } from '../services/PushProvider';
 import { consumePendingIntent } from '../services/notificationIntent';
+import { consumeWebNotificationAction } from '../services/webNotificationAction';
 import { notifyTeamSafetyCheckStarted, notifyIncidentReminderNonResponders } from '../services/notify';
 import { humanizeError } from '../services/errors';
 import { logEvent } from '../services/observability';
@@ -38,6 +39,7 @@ export function HomeScreen() {
   const [notifySummary, setNotifySummary] = useState<string | null>(null);
   const [intentMsg, setIntentMsg] = useState<string | null>(null);
   const [busyReminder, setBusyReminder] = useState(false);
+  const webActionHandledRef = useRef(false);
 
   const activeTeamId = profile?.teamIds?.[0] ?? null;
 
@@ -147,6 +149,40 @@ export function HomeScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incident?.id]);
+
+  useEffect(() => {
+    if (webActionHandledRef.current) return;
+    const notifAction = consumeWebNotificationAction();
+    if (!notifAction) return;
+    webActionHandledRef.current = true;
+
+    if (!user) {
+      setMsg('Opened from notification. Please sign in to submit your status.');
+      return;
+    }
+
+    if (!notifAction.teamId || !notifAction.incidentId) {
+      setMsg('Opened from notification. Missing team/incident context.');
+      return;
+    }
+
+    if (notifAction.action === 'green' || notifAction.action === 'not_green') {
+      const status = notifAction.action;
+      void (async () => {
+        try {
+          await submitMyStatus(notifAction.teamId!, notifAction.incidentId!, user.uid, status);
+          setMsg(status === 'green' ? 'Status submitted from notification: Green.' : 'Status submitted from notification: Not Green.');
+          await refreshIncident();
+        } catch (e) {
+          setMsg(humanizeError(e, 'Failed to submit status from notification.'));
+        }
+      })();
+    } else {
+      setIntentMsg('Opened from notification');
+      void refreshIncident();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   async function onReminder() {
     if (!activeTeamId || !incident?.id || !user) {
