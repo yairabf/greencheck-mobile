@@ -37,20 +37,27 @@ export function ProfileScreen() {
 
   async function onChangeLanguage() {
     const newLocale = locale === 'en' ? 'he' : 'en';
-    
+
     Alert.alert(
-      t('profile.restartRequired'),
-      '',
+      t('profile.changeLanguage'),
+      `${t('profile.language')}: ${newLocale === 'en' ? t('profile.english') : t('profile.hebrew')}`,
       [
         {
           text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: t('profile.restart'),
-          onPress: () => {
-            setLocale(newLocale);
-            Alert.alert('Language changed', 'Please restart the app manually to fully apply language updates.');
+          text: t('common.confirm'),
+          onPress: async () => {
+            try {
+              await setLocale(newLocale);
+              setMsg(`Language updated to ${newLocale === 'en' ? 'English' : 'Hebrew'}.`);
+              if (newLocale === 'he' || locale === 'he') {
+                Alert.alert('Direction update', 'If layout direction looks wrong, fully close and reopen the app.');
+              }
+            } catch (e) {
+              setMsg(e instanceof Error ? e.message : 'Failed to change language');
+            }
           },
         },
       ]
