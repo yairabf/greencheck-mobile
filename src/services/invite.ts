@@ -83,20 +83,19 @@ export async function joinTeamWithCode(uid: string, code: string): Promise<strin
     const tRef = teamRef(teamId);
     const uRef = userRef(uid);
 
-    const [teamSnap, userSnap] = await Promise.all([tx.get(tRef), tx.get(uRef)]);
-    if (!teamSnap.exists()) throw new Error('Team does not exist.');
+    const userSnap = await tx.get(uRef);
     if (!userSnap.exists()) throw new Error('User profile not found.');
 
-    const teamData = teamSnap.data();
     const userData = userSnap.data();
-    const memberIds = Array.isArray(teamData.memberIds) ? teamData.memberIds : [];
     const teamIds = Array.isArray(userData.teamIds) ? userData.teamIds : [];
 
-    if (memberIds.includes(uid) && teamIds.includes(teamId)) {
+    if (teamIds.includes(teamId)) {
       // idempotent success
       return teamId;
     }
 
+    // Update team membership and user profile atomically.
+    // We intentionally do not read team doc here because non-members cannot read it by rules.
     tx.update(tRef, { memberIds: arrayUnion(uid), updatedAt: serverTimestamp() });
     tx.update(uRef, { teamIds: arrayUnion(teamId), updatedAt: serverTimestamp() });
     return teamId;
