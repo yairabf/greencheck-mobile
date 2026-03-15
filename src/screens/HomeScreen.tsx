@@ -9,6 +9,7 @@ import { AppBanner } from '../components/AppBanner';
 import { colors } from '../config/theme';
 import { useAuth } from '../services/AuthProvider';
 import { triggerSafetyCheck, getActiveIncident, getIncidentResponseCounts, submitMyStatus, subscribeIncidentResponses, endSafetyCheck, reconcileActiveIncidentPointer, type IncidentResponseMap, type ResponseCounts } from '../services/incident';
+import { getTeamMembers } from '../services/teamMembers';
 import { useProfile } from '../services/ProfileProvider';
 import { usePush } from '../services/PushProvider';
 import { consumePendingIntent } from '../services/notificationIntent';
@@ -39,6 +40,8 @@ export function HomeScreen() {
   const [notifySummary, setNotifySummary] = useState<string | null>(null);
   const [intentMsg, setIntentMsg] = useState<string | null>(null);
   const [busyReminder, setBusyReminder] = useState(false);
+  const [responseMap, setResponseMap] = useState<IncidentResponseMap>({});
+  const [memberDirectory, setMemberDirectory] = useState<Record<string, { name: string; phone: string }>>({});
   const webActionHandledRef = useRef(false);
 
   const activeTeamId = profile?.teamIds?.[0] ?? null;
@@ -92,17 +95,14 @@ export function HomeScreen() {
   }
 
   function buildRoster(responseMap: IncidentResponseMap) {
-    const namesByUid: Record<string, { name: string; phone: string }> = {};
-    for (const uid of Object.keys(responseMap)) {
-      namesByUid[uid] = {
-        name: uid === user?.uid ? profile?.name || 'You' : `Member ${uid.slice(0, 6)}` ,
-        phone: uid === user?.uid ? profile?.phone || '' : '',
-      };
-    }
     const rows: RosterMember[] = Object.entries(responseMap).map(([uid, r]) => ({
       uid,
-      name: namesByUid[uid]?.name || 'Member',
-      phone: namesByUid[uid]?.phone || '',
+      name:
+        memberDirectory[uid]?.name
+        || (uid === user?.uid ? profile?.name || 'You' : 'Member'),
+      phone:
+        memberDirectory[uid]?.phone
+        || (uid === user?.uid ? profile?.phone || '' : ''),
       status: r.status,
       isYou: uid === user?.uid,
     }));
@@ -137,8 +137,27 @@ export function HomeScreen() {
 
   useEffect(() => {
     void refreshIncident();
+    void refreshTeamDirectory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTeamId]);
+
+  async function refreshTeamDirectory() {
+    if (!activeTeamId) {
+      setMemberDirectory({});
+      return;
+    }
+
+    try {
+      const { members } = await getTeamMembers(activeTeamId);
+      const next: Record<string, { name: string; phone: string }> = {};
+      for (const m of members) {
+        next[m.uid] = { name: m.name, phone: m.phone };
+      }
+      setMemberDirectory(next);
+    } catch {
+      // keep existing map on transient errors
+    }
+  }
 
   useEffect(() => {
     const intent = consumePendingIntent();
@@ -229,6 +248,7 @@ export function HomeScreen() {
   useEffect(() => {
     if (!activeTeamId || !incident?.id || !user) {
       setRoster([]);
+      setResponseMap({});
       return;
     }
     const unsub = subscribeIncidentResponses(
@@ -236,13 +256,18 @@ export function HomeScreen() {
       incident.id,
       (map) => {
         setLiveErr(null);
-        buildRoster(map);
+        setResponseMap(map);
       },
       (e) => setLiveErr(e.message),
     );
     return unsub;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTeamId, incident?.id, profile?.name, profile?.phone, user?.uid]);
+
+  useEffect(() => {
+    buildRoster(responseMap);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [responseMap, memberDirectory, user?.uid, profile?.name, profile?.phone]);
 
   return (
     <AppContainer>
