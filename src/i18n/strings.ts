@@ -10,6 +10,12 @@ export const strings = {
   'auth.alreadyHaveAccount': { en: 'Already have an account? Sign In', he: 'כבר יש לך חשבון? התחבר' },
   'auth.noAccount': { en: "Don't have an account? Sign Up", he: 'אין לך חשבון? הירשם' },
 
+  // Navigation
+  'nav.home': { en: 'Home', he: 'בית' },
+  'nav.team': { en: 'Team', he: 'צוות' },
+  'nav.history': { en: 'History', he: 'היסטוריה' },
+  'nav.profile': { en: 'Profile', he: 'פרופיל' },
+
   // Home screen
   'home.dashboard': { en: 'Team Dashboard', he: 'לוח בקרה' },
   'home.hi': { en: 'Hi', he: 'שלום' },

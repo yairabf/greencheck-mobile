@@ -10,6 +10,7 @@ import { IncidentHistoryScreen } from '../screens/IncidentHistoryScreen';
 import { MetricsScreen } from '../screens/MetricsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { colors } from '../config/theme';
+import { useT } from '../i18n';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -99,6 +100,8 @@ function HistoryTabStack() {
 }
 
 export function AppTabs() {
+  const t = useT();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -125,6 +128,7 @@ export function AppTabs() {
         name="Home"
         component={HomeTabStack}
         options={{
+          tabBarLabel: t('nav.home'),
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>🏠</Text>,
         }}
       />
@@ -132,6 +136,7 @@ export function AppTabs() {
         name="Team"
         component={TeamTabStack}
         options={{
+          tabBarLabel: t('nav.team'),
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>👥</Text>,
         }}
       />
@@ -139,6 +144,7 @@ export function AppTabs() {
         name="History"
         component={HistoryTabStack}
         options={{
+          tabBarLabel: t('nav.history'),
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>🕒</Text>,
         }}
       />
@@ -146,6 +152,7 @@ export function AppTabs() {
         name="Profile"
         component={ProfileScreen}
         options={{
+          tabBarLabel: t('nav.profile'),
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>👤</Text>,
         }}
       />
