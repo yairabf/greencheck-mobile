@@ -69,6 +69,12 @@ export const strings = {
   'metrics.title': { en: 'Metrics', he: 'מדדים' },
   'metrics.totalIncidents': { en: 'Total Incidents', he: 'סה"כ אירועים' },
   'metrics.avgResponseTime': { en: 'Avg Response Time', he: 'זמן תגובה ממוצע' },
+  'metrics.incidentsTriggered': { en: 'Incidents triggered', he: 'אירועים שהופעלו' },
+  'metrics.statusSubmissions': { en: 'Status submissions', he: 'דיווחי סטטוס' },
+  'metrics.remindersSent': { en: 'Reminders sent', he: 'תזכורות שנשלחו' },
+  'metrics.pushAttempts': { en: 'Push attempts', he: 'ניסיונות התראה' },
+  'metrics.closedAuto': { en: 'Closed auto', he: 'נסגר אוטומטית' },
+  'metrics.closedManual': { en: 'Closed manual', he: 'נסגר ידנית' },
 
   // Profile screen
   'profile.title': { en: 'Profile', he: 'פרופיל' },

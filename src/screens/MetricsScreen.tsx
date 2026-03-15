@@ -52,12 +52,12 @@ export function MetricsScreen() {
 
       {metrics ? (
         <View style={{ gap: 8 }}>
-          <Text style={{ color: colors.muted }}>Incidents triggered: {metrics.incidentCount}</Text>
-          <Text style={{ color: colors.muted }}>Status submissions: {metrics.statusSubmissions}</Text>
-          <Text style={{ color: colors.muted }}>Reminders sent: {metrics.remindersSent}</Text>
-          <Text style={{ color: colors.muted }}>Push attempts: {metrics.pushAttempts}</Text>
-          <Text style={{ color: colors.muted }}>Closed auto: {metrics.closeAuto}</Text>
-          <Text style={{ color: colors.muted }}>Closed manual: {metrics.closeManual}</Text>
+          <Text style={{ color: colors.muted }}>{t('metrics.incidentsTriggered')}: {metrics.incidentCount}</Text>
+          <Text style={{ color: colors.muted }}>{t('metrics.statusSubmissions')}: {metrics.statusSubmissions}</Text>
+          <Text style={{ color: colors.muted }}>{t('metrics.remindersSent')}: {metrics.remindersSent}</Text>
+          <Text style={{ color: colors.muted }}>{t('metrics.pushAttempts')}: {metrics.pushAttempts}</Text>
+          <Text style={{ color: colors.muted }}>{t('metrics.closedAuto')}: {metrics.closeAuto}</Text>
+          <Text style={{ color: colors.muted }}>{t('metrics.closedManual')}: {metrics.closeManual}</Text>
         </View>
       ) : null}
     </AppContainer>
