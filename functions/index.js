@@ -40,29 +40,40 @@ async function getTeamMemberIds(teamId) {
 }
 
 async function getDestinationsForUsers(userIds) {
-  const expoTokens = [];
+  const expoDestinations = [];
   const webSubscriptions = [];
 
-  const snaps = await Promise.all(
-    userIds.map((uid) => db.collection('users').doc(uid).collection('devices').where('active', '==', true).get())
-  );
+  const [userSnaps, deviceSnaps] = await Promise.all([
+    Promise.all(userIds.map((uid) => db.collection('users').doc(uid).get())),
+    Promise.all(userIds.map((uid) => db.collection('users').doc(uid).collection('devices').where('active', '==', true).get())),
+  ]);
 
-  for (let i = 0; i < snaps.length; i += 1) {
+  for (let i = 0; i < userIds.length; i += 1) {
     const uid = userIds[i];
-    const snap = snaps[i];
+    const locale = userSnaps[i].exists && userSnaps[i].get('locale') === 'he' ? 'he' : 'en';
+    const snap = deviceSnaps[i];
+
     snap.forEach((d) => {
       const token = d.get('pushToken');
-      if (isExpoToken(token)) expoTokens.push(token);
+      if (isExpoToken(token)) expoDestinations.push({ uid, token, locale });
 
       const subscription = d.get('webPushSubscription');
       if (subscription && subscription.endpoint && subscription.keys) {
-        webSubscriptions.push({ uid, subscription });
+        webSubscriptions.push({ uid, locale, subscription });
       }
     });
   }
 
+  const seenTokens = new Set();
+  const dedupExpo = [];
+  for (const row of expoDestinations) {
+    if (seenTokens.has(row.token)) continue;
+    seenTokens.add(row.token);
+    dedupExpo.push(row);
+  }
+
   return {
-    expoTokens: [...new Set(expoTokens)],
+    expoDestinations: dedupExpo,
     webSubscriptions,
   };
 }
@@ -107,6 +118,45 @@ function verifyActionToken(token) {
   }
 }
 
+function localizedCopy(locale, type, payload, reporterName) {
+  const he = locale === 'he';
+
+  if (type === 'safety_check_started') {
+    return {
+      title: he ? 'בדיקת בטיחות הופעלה' : 'Safety Check Started',
+      body: he ? 'הקש/י כדי לדווח סטטוס עכשיו.' : 'Tap to report your status now.',
+    };
+  }
+
+  if (type === 'safety_check_reminder') {
+    return {
+      title: he ? 'תזכורת: בדיקת בטיחות ממתינה' : 'Reminder: Safety Check Pending',
+      body: he ? 'הקש/י ודווח/י סטטוס.' : 'Please tap and report your status.',
+    };
+  }
+
+  if (type === 'safety_check_red_alert') {
+    return {
+      title: he ? '🚨 חבר צוות בסכנה' : '🚨 Teammate in danger',
+      body: he ? `${reporterName} דיווח/ה לא בסדר.` : `${reporterName} reported NOT GREEN.`,
+    };
+  }
+
+  if (payload.allSafe) {
+    return {
+      title: he ? 'בדיקת הבטיחות הסתיימה' : 'Safety Check Closed',
+      body: he ? 'כל חברי הצוות בטוחים ✅' : 'All teammates are safe ✅',
+    };
+  }
+
+  return {
+    title: he ? 'בדיקת הבטיחות הסתיימה' : 'Safety Check Closed',
+    body: payload.autoClosed
+      ? (he ? 'כל חברי הצוות הגיבו. הבדיקה נסגרה.' : 'All teammates responded. Safety check closed.')
+      : (he ? 'בדיקת הבטיחות נסגרה ידנית.' : 'Safety check was ended by a teammate.'),
+  };
+}
+
 async function sendExpo(messages) {
   if (!messages.length) return { attempted: 0, sent: 0, failed: 0, errors: [] };
   const res = await fetch('https://exp.host/--/api/v2/push/send', {
@@ -147,10 +197,10 @@ async function sendWebPush(destinations, buildPayload) {
   const errors = [];
 
   await Promise.all(
-    destinations.map(async ({ uid, subscription }) => {
+    destinations.map(async (dest) => {
       try {
-        const payload = buildPayload(uid);
-        await webpush.sendNotification(subscription, JSON.stringify(payload));
+        const payload = buildPayload(dest);
+        await webpush.sendNotification(dest.subscription, JSON.stringify(payload));
         sent += 1;
       } catch (err) {
         failed += 1;
@@ -229,7 +279,7 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
 
   let members = await getTeamMemberIds(teamId);
   if (payload.excludeUid) members = members.filter((uid) => uid !== payload.excludeUid);
-  const { expoTokens, webSubscriptions } = await getDestinationsForUsers(members);
+  const { expoDestinations, webSubscriptions } = await getDestinationsForUsers(members);
 
   let reporterName = 'A teammate';
   if (type === 'safety_check_red_alert' && payload.reportedByUid) {
@@ -240,29 +290,21 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
     }
   }
 
-  const title = type === 'safety_check_started' ? 'Safety Check Started'
-    : type === 'safety_check_reminder' ? 'Reminder: Safety Check Pending'
-    : type === 'safety_check_red_alert' ? '🚨 Teammate in danger'
-    : 'Safety Check Closed';
-
-  const body = type === 'safety_check_started' ? 'Tap to report your status now.'
-    : type === 'safety_check_reminder' ? 'Please tap and report your status.'
-    : type === 'safety_check_red_alert' ? `${reporterName} reported NOT GREEN.`
-    : (payload.allSafe
-      ? 'All teammates are safe ✅'
-      : (payload.autoClosed ? 'All teammates responded. Safety check closed.' : 'Safety check was ended by a teammate.'));
-
-  const expoMessages = expoTokens.map((to) => ({
-    to,
-    sound: 'default',
-    title,
-    body,
-    data: { type, teamId, incidentId, ...payload }
-  }));
+  const expoMessages = expoDestinations.map(({ token, locale }) => {
+    const copy = localizedCopy(locale, type, payload, reporterName);
+    return {
+      to: token,
+      sound: 'default',
+      title: copy.title,
+      body: copy.body,
+      data: { type, teamId, incidentId, ...payload }
+    };
+  });
 
   const [expoResult, webResult] = await Promise.all([
     sendExpo(expoMessages),
-    sendWebPush(webSubscriptions, (uid) => {
+    sendWebPush(webSubscriptions, ({ uid, locale }) => {
+      const copy = localizedCopy(locale, type, payload, reporterName);
       const isActionable = type === 'safety_check_started' || type === 'safety_check_reminder';
       const actionToken = isActionable ? signActionToken({
         uid,
@@ -272,8 +314,8 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
       }) : '';
 
       return {
-        title,
-        body,
+        title: copy.title,
+        body: copy.body,
         data: {
           type,
           teamId,
@@ -283,8 +325,8 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
           actionUrl: WEB_PUSH_ACTION_URL,
         },
         actions: isActionable ? [
-          { action: 'green', title: '✅ Green' },
-          { action: 'not_green', title: '🟥 Not Green' }
+          { action: 'green', title: locale === 'he' ? '✅ בסדר' : '✅ Green' },
+          { action: 'not_green', title: locale === 'he' ? '🟥 לא בסדר' : '🟥 Not Green' }
         ] : []
       };
     })
@@ -296,7 +338,7 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
       expo: expoResult,
       web: webResult,
     },
-    tokenCount: expoTokens.length,
+    tokenCount: expoDestinations.length,
     webSubscriptionCount: webSubscriptions.length,
     processedAt: admin.firestore.FieldValue.serverTimestamp()
   });

@@ -310,7 +310,6 @@ export async function endSafetyCheck(
   });
 
   if (closed) {
-    void notifyTeamSafetyCheckClosed(teamId, incidentId, endedByUid, false, endedByUid, false);
     void logEvent({ teamId, incidentId, type: 'incident_closed_manual', actor: endedByUid });
   }
 

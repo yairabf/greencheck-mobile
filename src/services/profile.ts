@@ -21,6 +21,7 @@ function fromDoc(uid: string, data: DocumentData): UserProfile {
     name: String(data.name ?? ''),
     phone: String(data.phone ?? ''),
     teamIds: Array.isArray(data.teamIds) ? data.teamIds : [],
+    locale: data.locale === 'he' ? 'he' : 'en',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
@@ -47,4 +48,15 @@ export async function updateUserProfile(uid: string, updates: Pick<UserProfile, 
     name: updates.name.trim(),
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function updateUserLocale(uid: string, locale: 'en' | 'he'): Promise<void> {
+  await setDoc(
+    profileRef(uid),
+    {
+      locale,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 }
