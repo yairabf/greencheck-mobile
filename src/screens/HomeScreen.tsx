@@ -20,6 +20,19 @@ import { flags } from '../config/env';
 import type { Incident } from '../types/incident';
 import { useT } from '../i18n';
 
+function formatTsShort(ts: unknown): string {
+  if (!ts) return '—';
+  const anyTs = ts as any;
+  if (typeof anyTs?.toDate === 'function') {
+    return (anyTs.toDate() as Date).toLocaleString();
+  }
+  try {
+    return new Date(String(ts)).toLocaleString();
+  } catch {
+    return String(ts);
+  }
+}
+
 export function HomeScreen() {
   const { signOutUser, user } = useAuth();
   const { profile, refresh: refreshProfile } = useProfile();
@@ -332,7 +345,7 @@ export function HomeScreen() {
       />
       <StatusCard
         title={t('home.activeCheck')}
-        subtitle={incident ? t('home.activeIncident', { id: incident.id }) : t('home.noActiveCheck')}
+        subtitle={incident ? t('home.activeIncidentAt', { date: formatTsShort(incident.triggeredAt) }) : t('home.noActiveCheck')}
       />
       <StatusCard
         title={t('home.teammates')}

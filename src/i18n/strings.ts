@@ -24,6 +24,7 @@ export const strings = {
   'home.noTeam': { en: 'No team yet', he: 'עדיין אין צוות' },
   'home.activeCheck': { en: 'Active check', he: 'בדיקה פעילה' },
   'home.activeIncident': { en: 'Active incident: {id}', he: 'אירוע פעיל: {id}' },
+  'home.activeIncidentAt': { en: 'Active since {date}', he: 'פעיל מאז {date}' },
   'home.noActiveCheck': { en: 'No active safety check right now', he: 'אין בדיקת בטיחות פעילה כרגע' },
   'home.pushStatus': { en: 'Push status', he: 'סטטוס התראות' },
   'home.pushRegistered': { en: 'Push token registered', he: 'התראות רשומות' },
