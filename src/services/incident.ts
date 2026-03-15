@@ -11,7 +11,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import { getFirebaseServices } from './firebase';
-import { notifyTeamSafetyCheckClosed } from './notify';
+import { notifyTeamRedAlert, notifyTeamSafetyCheckClosed } from './notify';
 import { logEvent } from './observability';
 import { getActiveTeamMemberIds } from './teamMembers';
 import type { Incident } from '../types/incident';
@@ -171,6 +171,10 @@ export async function submitMyStatus(
       updatedAt: serverTimestamp(),
     });
   });
+
+  if (status === 'not_green') {
+    void notifyTeamRedAlert(teamId, incidentId, uid, uid);
+  }
 
   await autoCloseIfComplete(teamId, incidentId);
 }

@@ -31,7 +31,7 @@ async function getTeamMemberIds(teamId: string): Promise<string[]> {
 async function enqueuePushDispatch(params: {
   teamId: string;
   incidentId: string;
-  type: 'safety_check_started' | 'safety_check_reminder' | 'safety_check_closed';
+  type: 'safety_check_started' | 'safety_check_reminder' | 'safety_check_closed' | 'safety_check_red_alert';
   payload?: Record<string, unknown>;
   idempotencyKey: string;
   createdBy: string;
@@ -147,6 +147,43 @@ export async function notifyTeamSafetyCheckClosed(
 
   return {
     attempted: memberIds.length,
+    sent: 0,
+    failed: 0,
+    errors: ['queued_for_backend'],
+  };
+}
+
+async function redAlertDedupOk(teamId: string, incidentId: string, reporterUid: string): Promise<boolean> {
+  const { firestore } = getFirebaseServices();
+  const key = `red_${teamId}_${incidentId}_${reporterUid}`;
+  const ref = doc(firestore, 'notificationLogs', key);
+  const snap = await getDoc(ref);
+  if (snap.exists()) return false;
+  await setDoc(ref, { teamId, incidentId, reporterUid, type: 'red_alert', createdAt: serverTimestamp() }, { merge: true });
+  return true;
+}
+
+export async function notifyTeamRedAlert(
+  teamId: string,
+  incidentId: string,
+  reporterUid: string,
+  createdBy: string,
+): Promise<NotifyResult> {
+  const dedup = await redAlertDedupOk(teamId, incidentId, reporterUid);
+  if (!dedup) return { attempted: 0, sent: 0, failed: 0, errors: ['Red alert already sent for this user/incident'] };
+
+  const recipients = (await getTeamMemberIds(teamId)).filter((uid) => uid !== reporterUid);
+  await enqueuePushDispatch({
+    teamId,
+    incidentId,
+    type: 'safety_check_red_alert',
+    payload: { reportedByUid: reporterUid, excludeUid: reporterUid },
+    idempotencyKey: `red_${teamId}_${incidentId}_${reporterUid}`,
+    createdBy,
+  });
+
+  return {
+    attempted: recipients.length,
     sent: 0,
     failed: 0,
     errors: ['queued_for_backend'],

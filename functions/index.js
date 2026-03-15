@@ -222,15 +222,27 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
   }
   await idemRef.set({ createdAt: admin.firestore.FieldValue.serverTimestamp(), requestId: snap.id });
 
-  const members = await getTeamMemberIds(teamId);
+  let members = await getTeamMemberIds(teamId);
+  if (payload.excludeUid) members = members.filter((uid) => uid !== payload.excludeUid);
   const { expoTokens, webSubscriptions } = await getDestinationsForUsers(members);
+
+  let reporterName = 'A teammate';
+  if (type === 'safety_check_red_alert' && payload.reportedByUid) {
+    const userSnap = await db.collection('users').doc(String(payload.reportedByUid)).get();
+    if (userSnap.exists) {
+      const nm = userSnap.get('name');
+      if (typeof nm === 'string' && nm.trim()) reporterName = nm.trim();
+    }
+  }
 
   const title = type === 'safety_check_started' ? 'Safety Check Started'
     : type === 'safety_check_reminder' ? 'Reminder: Safety Check Pending'
+    : type === 'safety_check_red_alert' ? '🚨 Teammate in danger'
     : 'Safety Check Closed';
 
   const body = type === 'safety_check_started' ? 'Tap to report your status now.'
     : type === 'safety_check_reminder' ? 'Please tap and report your status.'
+    : type === 'safety_check_red_alert' ? `${reporterName} reported NOT GREEN.`
     : (payload.allSafe
       ? 'All teammates are safe ✅'
       : (payload.autoClosed ? 'All teammates responded. Safety check closed.' : 'Safety check was ended by a teammate.'));
@@ -246,12 +258,13 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
   const [expoResult, webResult] = await Promise.all([
     sendExpo(expoMessages),
     sendWebPush(webSubscriptions, (uid) => {
-      const actionToken = signActionToken({
+      const isActionable = type === 'safety_check_started' || type === 'safety_check_reminder';
+      const actionToken = isActionable ? signActionToken({
         uid,
         teamId,
         incidentId,
         exp: Date.now() + 1000 * 60 * 60 * 4,
-      });
+      }) : '';
 
       return {
         title,
@@ -264,10 +277,10 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
           actionToken,
           actionUrl: WEB_PUSH_ACTION_URL,
         },
-        actions: [
+        actions: isActionable ? [
           { action: 'green', title: '✅ Green' },
           { action: 'not_green', title: '🟥 Not Green' }
-        ]
+        ] : []
       };
     })
   ]);
