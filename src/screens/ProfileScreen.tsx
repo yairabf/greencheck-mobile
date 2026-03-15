@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View, Alert } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
 import { colors, radius, spacing } from '../config/theme';
@@ -37,31 +37,15 @@ export function ProfileScreen() {
 
   async function onChangeLanguage() {
     const newLocale = locale === 'en' ? 'he' : 'en';
-
-    Alert.alert(
-      t('profile.changeLanguage'),
-      `${t('profile.language')}: ${newLocale === 'en' ? t('profile.english') : t('profile.hebrew')}`,
-      [
-        {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('common.confirm'),
-          onPress: async () => {
-            try {
-              await setLocale(newLocale);
-              setMsg(`Language updated to ${newLocale === 'en' ? 'English' : 'Hebrew'}.`);
-              if (newLocale === 'he' || locale === 'he') {
-                Alert.alert('Direction update', 'If layout direction looks wrong, fully close and reopen the app.');
-              }
-            } catch (e) {
-              setMsg(e instanceof Error ? e.message : 'Failed to change language');
-            }
-          },
-        },
-      ]
-    );
+    try {
+      await setLocale(newLocale);
+      setMsg(`Language updated to ${newLocale === 'en' ? 'English' : 'Hebrew'}.`);
+      if (newLocale === 'he' || locale === 'he') {
+        setMsg((prev) => `${prev ?? ''} If direction looks wrong, fully close and reopen the app.`.trim());
+      }
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Failed to change language');
+    }
   }
 
   return (
