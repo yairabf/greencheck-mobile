@@ -61,6 +61,7 @@ export const strings = {
   'home.noActiveIncidentToEnd': { en: 'No active incident to end.', he: 'אין אירוע פעיל לסיום.' },
   'home.safetyCheckEnded': { en: 'Safety check ended.', he: 'בדיקת הבטיחות הסתיימה.' },
   'home.incidentAlreadyClosed': { en: 'Incident already closed.', he: 'האירוע כבר נסגר.' },
+  'home.allTeamSafe': { en: 'All teammates are safe ✅', he: 'כל חברי הצוות בטוחים ✅' },
 
   // Team screen
   'team.title': { en: 'Team', he: 'צוות' },

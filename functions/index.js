@@ -231,7 +231,9 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
 
   const body = type === 'safety_check_started' ? 'Tap to report your status now.'
     : type === 'safety_check_reminder' ? 'Please tap and report your status.'
-    : (payload.autoClosed ? 'All teammates responded. Safety check closed.' : 'Safety check was ended by a teammate.');
+    : (payload.allSafe
+      ? 'All teammates are safe ✅'
+      : (payload.autoClosed ? 'All teammates responded. Safety check closed.' : 'Safety check was ended by a teammate.'));
 
   const expoMessages = expoTokens.map((to) => ({
     to,

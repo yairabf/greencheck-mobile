@@ -211,9 +211,9 @@ export async function autoCloseIfComplete(teamId: string, incidentId: string): P
   const tRef = teamRef(teamId);
   const iRef = incidentRef(teamId, incidentId);
 
-  const closed = await runTransaction(firestore, async (tx) => {
+  const closeResult = await runTransaction(firestore, async (tx) => {
     const [tSnap, iSnap] = await Promise.all([tx.get(tRef), tx.get(iRef)]);
-    if (!tSnap.exists() || !iSnap.exists()) return false;
+    if (!tSnap.exists() || !iSnap.exists()) return { closed: false, allSafe: false };
 
     const tData = tSnap.data();
     const iData = iSnap.data();
@@ -228,15 +228,17 @@ export async function autoCloseIfComplete(teamId: string, incidentId: string): P
     const responsesRef = collection(firestore, 'teams', teamId, 'incidents', incidentId, 'responses');
     const responsesSnap = await getDocs(query(responsesRef));
 
-    if (responsesSnap.empty) return false;
+    if (responsesSnap.empty) return { closed: false, allSafe: false };
 
     let hasNoResponse = false;
+    let hasNotGreen = false;
     responsesSnap.forEach((d) => {
       const status = String(d.data().status ?? 'no_response');
       if (status === 'no_response') hasNoResponse = true;
+      if (status === 'not_green') hasNotGreen = true;
     });
 
-    if (hasNoResponse) return false;
+    if (hasNoResponse) return { closed: false, allSafe: false };
 
     tx.update(iRef, {
       status: 'closed',
@@ -250,15 +252,15 @@ export async function autoCloseIfComplete(teamId: string, incidentId: string): P
       updatedAt: serverTimestamp(),
     });
 
-    return true;
+    return { closed: true, allSafe: !hasNotGreen };
   });
 
-  if (closed) {
-    void notifyTeamSafetyCheckClosed(teamId, incidentId, 'system:auto', true, 'system:auto');
-    void logEvent({ teamId, incidentId, type: 'incident_closed_auto', actor: 'system:auto' });
+  if (closeResult.closed) {
+    void notifyTeamSafetyCheckClosed(teamId, incidentId, 'system:auto', true, 'system:auto', closeResult.allSafe);
+    void logEvent({ teamId, incidentId, type: 'incident_closed_auto', actor: 'system:auto', meta: { allSafe: closeResult.allSafe } });
   }
 
-  return closed;
+  return closeResult.closed;
 }
 
 
@@ -301,8 +303,8 @@ export async function endSafetyCheck(
   });
 
   if (closed) {
-    void notifyTeamSafetyCheckClosed(teamId, incidentId, 'system:auto', true, 'system:auto');
-    void logEvent({ teamId, incidentId, type: 'incident_closed_auto', actor: 'system:auto' });
+    void notifyTeamSafetyCheckClosed(teamId, incidentId, endedByUid, false, endedByUid, false);
+    void logEvent({ teamId, incidentId, type: 'incident_closed_manual', actor: endedByUid });
   }
 
   return closed;

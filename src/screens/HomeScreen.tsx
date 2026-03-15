@@ -140,8 +140,13 @@ export function HomeScreen() {
       await logEvent({ teamId: activeTeamId, incidentId: beforeId, type: 'status_submitted', actor: user.uid, meta: { status } });
       await refreshIncident();
       const after = await getActiveIncident(activeTeamId);
+      const finalCounts = await getIncidentResponseCounts(activeTeamId, beforeId);
       if (!after || after.id !== beforeId) {
-        setMsg(t('home.incidentAutoClosed'));
+        if (finalCounts.not_green === 0 && finalCounts.no_response === 0) {
+          setMsg(t('home.allTeamSafe'));
+        } else {
+          setMsg(t('home.incidentAutoClosed'));
+        }
       } else {
         setMsg(status === 'green' ? t('home.markedGreen') : t('home.markedNotGreen'));
       }

@@ -130,6 +130,7 @@ export async function notifyTeamSafetyCheckClosed(
   closedBy: string,
   autoClosed: boolean,
   createdBy: string,
+  allSafe = false,
 ): Promise<NotifyResult> {
   const dedup = await closeNotifyDedupOk(teamId, incidentId);
   if (!dedup) return { attempted: 0, sent: 0, failed: 0, errors: ['Close notification already sent'] };
@@ -139,7 +140,7 @@ export async function notifyTeamSafetyCheckClosed(
     teamId,
     incidentId,
     type: 'safety_check_closed',
-    payload: { closedBy, autoClosed },
+    payload: { closedBy, autoClosed, allSafe },
     idempotencyKey: `closed_${teamId}_${incidentId}`,
     createdBy,
   });
