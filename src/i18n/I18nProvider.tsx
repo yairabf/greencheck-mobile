@@ -23,28 +23,53 @@ function detectLocale(): Locale {
 
 export function I18nProvider({ children }: PropsWithChildren) {
   const [locale, setLocaleState] = useState<Locale>('en');
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    I18nManager.allowRTL(true);
-    const detected = detectLocale();
-    setLocaleState(detected);
+    try {
+      I18nManager.allowRTL(true);
+    } catch (error) {
+      console.warn('I18nManager.allowRTL failed:', error);
+    }
+    
+    try {
+      const detected = detectLocale();
+      setLocaleState(detected);
+    } catch (error) {
+      console.warn('Locale detection failed, using English:', error);
+    }
+    
+    setInitialized(true);
   }, []);
 
   function setLocale(newLocale: Locale) {
     setLocaleState(newLocale);
-    const isRTL = newLocale === 'he';
-    I18nManager.forceRTL(isRTL);
+    try {
+      const isRTL = newLocale === 'he';
+      I18nManager.forceRTL(isRTL);
+    } catch (error) {
+      console.warn('I18nManager.forceRTL failed:', error);
+    }
   }
 
   function t(key: StringKey, params?: Record<string, string | number>): string {
-    const translation = strings[key]?.[locale] ?? strings[key]?.en ?? key;
-    if (!params) return translation;
+    try {
+      const translation = strings[key]?.[locale] ?? strings[key]?.en ?? key;
+      if (!params) return translation;
 
-    let result = translation;
-    for (const [param, value] of Object.entries(params)) {
-      result = result.replace(`{${param}}`, String(value));
+      let result = translation;
+      for (const [param, value] of Object.entries(params)) {
+        result = result.replace(`{${param}}`, String(value));
+      }
+      return result;
+    } catch (error) {
+      console.warn('Translation failed for key:', key, error);
+      return String(key);
     }
-    return result;
+  }
+
+  if (!initialized) {
+    return null;
   }
 
   return (
@@ -57,7 +82,12 @@ export function I18nProvider({ children }: PropsWithChildren) {
 export function useI18n(): I18nContextValue {
   const context = useContext(I18nContext);
   if (!context) {
-    throw new Error('useI18n must be used within I18nProvider');
+    console.error('useI18n called outside of I18nProvider');
+    return {
+      locale: 'en',
+      setLocale: () => {},
+      t: (key: StringKey) => String(key),
+    };
   }
   return context;
 }
