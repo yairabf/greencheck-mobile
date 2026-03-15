@@ -42,8 +42,12 @@ service cloud.firestore {
 
     // Team invites collection
     match /teamInvites/{code} {
-      // Allow signed-in users to read active invites so they can join by code.
-      allow read: if isSignedIn() && resource.data.active == true;
+      // Allow signed-in users to:
+      // - read active invites
+      // - probe non-existing codes (needed for invite code generation uniqueness checks)
+      allow read: if isSignedIn()
+        && (!exists(/databases/$(database)/documents/teamInvites/$(code))
+            || resource.data.active == true);
 
       allow create: if isSignedIn()
         && request.resource.data.teamId is string
