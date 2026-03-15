@@ -23,7 +23,6 @@ function detectLocale(): Locale {
 
 export function I18nProvider({ children }: PropsWithChildren) {
   const [locale, setLocaleState] = useState<Locale>('en');
-  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     try {
@@ -38,8 +37,6 @@ export function I18nProvider({ children }: PropsWithChildren) {
     } catch (error) {
       console.warn('Locale detection failed, using English:', error);
     }
-    
-    setInitialized(true);
   }, []);
 
   function setLocale(newLocale: Locale) {
@@ -66,10 +63,6 @@ export function I18nProvider({ children }: PropsWithChildren) {
       console.warn('Translation failed for key:', key, error);
       return String(key);
     }
-  }
-
-  if (!initialized) {
-    return null;
   }
 
   return (
