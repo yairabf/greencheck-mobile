@@ -304,11 +304,20 @@ export function HomeScreen() {
   return (
     <AppContainer>
       <ScrollView
+        style={{ flex: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onPullRefresh()} />}
-        contentContainerStyle={{ gap: 10, paddingBottom: 24 }}
+        contentContainerStyle={{ flexGrow: 1, gap: 10, paddingBottom: 24 }}
+        alwaysBounceVertical
+        bounces
+        overScrollMode="always"
       >
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('home.dashboard')}</Text>
       <Text style={{ color: colors.muted }}>{t('home.hi')} {profile?.name ?? 'teammate'} 👋</Text>
+      <AppButton
+        label={refreshing ? t('common.loading') : 'Refresh now'}
+        variant="secondary"
+        onPress={() => void onPullRefresh()}
+      />
       <StatusCard
         title={t('home.teamStatus')}
         subtitle={hasTeams ? t('home.inTeams', { count: profile?.teamIds.length ?? 0 }) : t('home.noTeam')}
