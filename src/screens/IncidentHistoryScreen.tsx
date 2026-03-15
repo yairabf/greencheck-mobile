@@ -6,6 +6,7 @@ import { LoadingBlock } from '../components/LoadingBlock';
 import { EmptyState } from '../components/EmptyState';
 import { AppBanner } from '../components/AppBanner';
 import { listIncidents } from '../services/incident';
+import { getTeamMembers } from '../services/teamMembers';
 import { useProfile } from '../services/ProfileProvider';
 import type { Incident } from '../types/incident';
 import { useT } from '../i18n';
@@ -25,20 +26,36 @@ export function IncidentHistoryScreen() {
   const t = useT();
   const teamId = profile?.teamIds?.[0];
   const [rows, setRows] = useState<Incident[]>([]);
+  const [namesByUid, setNamesByUid] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  function asDisplayName(uid?: string | null): string {
+    if (!uid) return '—';
+    const n = namesByUid[uid];
+    if (n && n !== uid) return n;
+    if (uid === 'system:auto') return 'System';
+    return 'Member';
+  }
+
   async function load() {
     if (!teamId) {
       setRows([]);
+      setNamesByUid({});
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const data = await listIncidents(teamId);
+      const [data, memberData] = await Promise.all([
+        listIncidents(teamId),
+        getTeamMembers(teamId),
+      ]);
       setRows(data);
+      const map: Record<string, string> = {};
+      for (const m of memberData.members) map[m.uid] = m.name || 'Member';
+      setNamesByUid(map);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load history');
     } finally {
@@ -73,7 +90,7 @@ export function IncidentHistoryScreen() {
                 <View style={{ gap: 4 }}>
                   <Text style={styles.meta}>Ended: {formatTs(r.endedAt)}</Text>
                   <Text style={styles.meta}>Close mode: {r.autoClosed ? 'Auto' : 'Manual'}</Text>
-                  <Text style={styles.meta}>Ended by: {r.endedBy ?? '—'}</Text>
+                  <Text style={styles.meta}>Ended by: {asDisplayName(r.endedBy)}</Text>
                 </View>
               ) : null}
             </Pressable>

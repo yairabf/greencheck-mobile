@@ -98,6 +98,8 @@ export function HomeScreen() {
     const n = (rawName || '').trim();
     if (!n) return '';
     if (n === uid) return '';
+    // Guard against showing technical IDs as names.
+    if (/^[A-Za-z0-9:_-]{10,}$/.test(n) && !n.includes(' ')) return '';
     if (/^[A-Za-z0-9_-]{20,}$/.test(n)) return '';
     return n;
   }
@@ -165,7 +167,10 @@ export function HomeScreen() {
       const { members } = await getTeamMembers(activeTeamId);
       const next: Record<string, { name: string; phone: string }> = {};
       for (const m of members) {
-        next[m.uid] = { name: m.name, phone: m.phone };
+        next[m.uid] = {
+          name: normalizeDisplayName(m.uid, m.name) || (m.uid === user?.uid ? profile?.name || 'You' : 'Member'),
+          phone: m.phone,
+        };
       }
       setMemberDirectory(next);
     } catch {
