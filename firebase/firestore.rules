@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function teamDoc(teamId) {
+      return get(/databases/$(database)/documents/teams/$(teamId));
+    }
+
+    function isTeamMember(teamId) {
+      return isSignedIn() && request.auth.uid in teamDoc(teamId).data.memberIds;
+    }
+
+    function inviteDoc(code) {
+      return get(/databases/$(database)/documents/teamInvites/$(code));
+    }
+
+    function inviteTeamId(code) {
+      return inviteDoc(code).data.teamId;
+    }
+
+    function isValidPushType(t) {
+      return t in ['safety_check_started', 'safety_check_reminder', 'safety_check_closed'];
+    }
+
+    // User profile + user devices
+    match /users/{uid} {
+      allow read, create, update: if isSelf(uid);
+      allow delete: if false;
+
+      match /devices/{deviceId} {
+        allow read, create, update: if isSelf(uid);
+        allow delete: if false;
+      }
+    }
+
+    // Team invites collection
+    match /teamInvites/{code} {
+      allow read: if isSignedIn()
+        && inviteDoc(code).data.active == true
+        && isTeamMember(inviteTeamId(code));
+
+      allow create: if isSignedIn()
+        && request.resource.data.teamId is string
+        && isTeamMember(request.resource.data.teamId)
+        && request.resource.data.createdBy == request.auth.uid;
+
+      allow update, delete: if false;
+    }
+
+    // Notification dedup/log docs (MVP)
+    match /notificationLogs/{logId} {
+      allow create, read: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Observability event logs (team-scoped)
+    match /eventLogs/{logId} {
+      allow create: if isSignedIn()
+        && request.resource.data.teamId is string
+        && isTeamMember(request.resource.data.teamId);
+      allow read: if isSignedIn()
+        && resource.data.teamId is string
+        && isTeamMember(resource.data.teamId);
+      allow update, delete: if false;
+    }
+
+    // Push dispatch queue (client enqueue, backend process)
+    match /pushDispatchRequests/{requestId} {
+      allow create: if isSignedIn()
+        && request.resource.data.teamId is string
+        && request.resource.data.incidentId is string
+        && request.resource.data.type is string
+        && isValidPushType(request.resource.data.type)
+        && request.resource.data.idempotencyKey is string
+        && request.resource.data.createdBy == request.auth.uid
+        && isTeamMember(request.resource.data.teamId)
+        // prevent clients from setting backend-only fields
+        && !('status' in request.resource.data)
+        && !('result' in request.resource.data)
+        && !('processedAt' in request.resource.data);
+
+      allow read: if isSignedIn()
+        && resource.data.createdBy == request.auth.uid;
+
+      allow update, delete: if false;
+    }
+
+    // Backend idempotency store (client no access)
+    match /pushDispatchIdempotency/{docId} {
+      allow read, write: if false;
+    }
+
+    // Team domain
+    match /teams/{teamId} {
+      allow read: if isTeamMember(teamId);
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.auth.uid in request.resource.data.memberIds;
+      allow update: if isTeamMember(teamId);
+      allow delete: if false;
+
+      match /incidents/{incidentId} {
+        allow read, create, update: if isTeamMember(teamId);
+        allow delete: if false;
+
+        match /responses/{uid} {
+          allow read: if isTeamMember(teamId);
+          allow create, update: if isTeamMember(teamId) && request.auth.uid == uid;
+          allow delete: if false;
+        }
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

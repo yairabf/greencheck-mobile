@@ -1,0 +1,28 @@
+{
+  "project": "GreenCheck Mobile",
+  "generatedAtUtc": "2026-03-11T00:07:00Z",
+  "workflowMode": "initial_scan",
+  "scanLevel": "standard",
+  "projectType": ["mobile-app", "firebase-backend"],
+  "summary": {
+    "frontend": "React Native / Expo app",
+    "backend": "Firebase Cloud Functions",
+    "data": "Firestore",
+    "auth": "Firebase phone OTP",
+    "notifications": "Expo push"
+  },
+  "structure": {
+    "src": ["screens", "navigation", "services", "components", "config", "types"],
+    "functions": ["firebase cloud functions"],
+    "tests": ["unit tests under tests/unit"],
+    "docs": ["qa", "release", "security", "testing", "firestore-schema"]
+  },
+  "status": {
+    "documentationBaseline": "created",
+    "nextRecommended": [
+      "Deep-dive docs for key modules",
+      "API/service contract mapping",
+      "Release checklist validation"
+    ]
+  }
+}

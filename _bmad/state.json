@@ -1,0 +1,39 @@
+{
+  "projectName": "GreenCheck Mobile",
+  "projectPath": "/home/ubuntu/projects/greencheck-mobile",
+  "createdAt": "2026-03-10T23:53:54.937Z",
+  "currentPhase": "implementation",
+  "activeWorkflow": null,
+  "completedWorkflows": [
+    {
+      "id": "document-project",
+      "agentId": "analyst",
+      "outputFile": "",
+      "completedAt": "2026-03-11T00:05:10.250Z"
+    },
+    {
+      "id": "document-project",
+      "agentId": "analyst",
+      "outputFile": "/home/ubuntu/projects/greencheck-mobile/docs/index.md",
+      "completedAt": "2026-03-11T00:07:08.265Z"
+    },
+    {
+      "id": "generate-project-context",
+      "agentId": "analyst",
+      "outputFile": "/home/ubuntu/projects/greencheck-mobile/_bmad-output/project-context.md",
+      "completedAt": "2026-03-11T00:14:09.399Z"
+    },
+    {
+      "id": "quick-spec",
+      "agentId": "quick-flow-solo-dev",
+      "outputFile": "/home/ubuntu/projects/greencheck-mobile/_bmad-output/implementation-artifacts/tech-spec-greencheck-production-readiness-github-onboarding.md",
+      "completedAt": "2026-03-11T00:51:08.054Z"
+    },
+    {
+      "id": "quick-dev",
+      "agentId": "quick-flow-solo-dev",
+      "outputFile": "/home/ubuntu/projects/greencheck-mobile/_bmad-output/implementation-artifacts/quick-dev-run.md",
+      "completedAt": "2026-03-11T01:00:29.293Z"
+    }
+  ]
+}
