@@ -3,6 +3,10 @@ import { useEffect } from 'react';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { getMissingEnvKeys } from './src/config/validateEnv';
 import { getFirebaseServices } from './src/services/firebase';
+import { AuthProvider } from './src/services/AuthProvider';
+import { ProfileProvider } from './src/services/ProfileProvider';
+import { PushProvider } from './src/services/PushProvider';
+import { I18nProvider } from './src/i18n';
 
 export default function App() {
   useEffect(() => {
@@ -27,9 +31,16 @@ export default function App() {
   }, []);
 
   return (
-    <>
-      <RootNavigator />
-      <StatusBar style="auto" />
-    </>
+    <I18nProvider>
+      <AuthProvider>
+        <ProfileProvider>
+          <PushProvider>
+            <RootNavigator />
+            <StatusBar style="auto" />
+          </PushProvider>
+        </ProfileProvider>
+      </AuthProvider>
+    </I18nProvider>
   );
 }
+

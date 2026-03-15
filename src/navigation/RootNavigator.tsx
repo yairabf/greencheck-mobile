@@ -1,8 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
-import { AppStack } from './AppStack';
+import { AppTabs } from './AppTabs';
 import { AuthStack } from './AuthStack';
-import { AuthProvider, useAuth } from '../services/AuthProvider';
-import { ProfileProvider } from '../services/ProfileProvider';
+import { useAuth } from '../services/AuthProvider';
 
 function RootFlow() {
   const { user, loading, enabled } = useAuth();
@@ -15,17 +14,13 @@ function RootFlow() {
     return <AuthStack />;
   }
 
-  return user ? <AppStack /> : <AuthStack />;
+  return user ? <AppTabs /> : <AuthStack />;
 }
 
 export function RootNavigator() {
   return (
     <NavigationContainer>
-      <AuthProvider>
-        <ProfileProvider>
-          <RootFlow />
-        </ProfileProvider>
-      </AuthProvider>
+      <RootFlow />
     </NavigationContainer>
   );
 }

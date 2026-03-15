@@ -4,34 +4,32 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'greencheck-mobile',
   slug: 'greencheck-mobile',
+  scheme: 'greencheck',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/icon.png',
   userInterfaceStyle: 'light',
-  splash: {
-    image: './assets/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#ffffff',
-  },
-  scheme: 'greencheck',
   ios: {
-    supportsTablet: true,
     bundleIdentifier: 'com.yairabc.greencheckmobile',
+    buildNumber: '8',
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     package: 'com.yairabc.greencheckmobile',
-    adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
-      foregroundImage: './assets/android-icon-foreground.png',
-      backgroundImage: './assets/android-icon-background.png',
-      monochromeImage: './assets/android-icon-monochrome.png',
-    },
-    predictiveBackGestureEnabled: false,
-    versionCode: 2,
+    versionCode: 8,
+    useNextNotificationsApi: true,
   },
-  web: {
-    favicon: './assets/favicon.png',
-  },
+  plugins: [
+    [
+      'expo-notifications',
+      {
+        icon: './assets/icon.png',
+        color: '#4CAF50',
+        sounds: [],
+      },
+    ],
+  ],
   extra: {
     firebaseApiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
     firebaseAuthDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,

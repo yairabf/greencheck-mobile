@@ -1,48 +1,33 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, TextInput, View, TouchableOpacity } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
 import { colors, radius, spacing } from '../config/theme';
 import { AppBanner } from '../components/AppBanner';
 import { useAuth } from '../services/AuthProvider';
+import { useT } from '../i18n';
 
 export function AuthScreen() {
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const { sendOtp, verifyOtp, confirmation } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const { signIn, signUp } = useAuth();
+  const t = useT();
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    let el = document.getElementById('recaptcha-container');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'recaptcha-container';
-      el.style.display = 'none';
-      document.body.appendChild(el);
-    }
-  }, []);
-
-  async function onSendOtp() {
+  async function onSubmit() {
     setError(null);
     setBusy(true);
     try {
-      await sendOtp(phone.trim(), undefined);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to send OTP');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onVerifyOtp() {
-    setError(null);
-    setBusy(true);
-    try {
-      await verifyOtp(code.trim());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to verify OTP');
+      if (isSignUp) {
+        await signUp(email.trim(), password);
+      } else {
+        await signIn(email.trim(), password);
+      }
+    } catch (e: any) {
+      const message = e?.message || 'Authentication failed';
+      setError(message.replace('Firebase: ', '').replace(/\(auth\/[^)]+\)/, '').trim());
     } finally {
       setBusy(false);
     }
@@ -51,34 +36,41 @@ export function AuthScreen() {
   return (
     <AppContainer>
       <View style={styles.wrap}>
-        <Text style={styles.title}>GreenCheck</Text>
-        <Text style={styles.sub}>Sign in with phone to join your team.</Text>
+        <Text style={styles.title}>{t('auth.title')}</Text>
+        <Text style={styles.sub}>{isSignUp ? t('auth.signUp') : t('auth.signIn')}</Text>
       </View>
 
       <TextInput
         style={styles.input}
-        keyboardType="phone-pad"
-        placeholder="+1 555 123 4567"
+        keyboardType="email-address"
+        placeholder={t('auth.email')}
         placeholderTextColor={colors.muted}
-        value={phone}
-        onChangeText={setPhone}
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        autoCorrect={false}
       />
 
-      {!confirmation ? (
-        <AppButton label={busy ? 'Sending...' : 'Send OTP'} onPress={onSendOtp} />
-      ) : (
-        <>
-          <TextInput
-            style={styles.input}
-            keyboardType="number-pad"
-            placeholder="Enter OTP code"
-            placeholderTextColor={colors.muted}
-            value={code}
-            onChangeText={setCode}
-          />
-          <AppButton label={busy ? 'Verifying...' : 'Verify OTP'} onPress={onVerifyOtp} />
-        </>
-      )}
+      <TextInput
+        style={styles.input}
+        secureTextEntry
+        placeholder={t('auth.password')}
+        placeholderTextColor={colors.muted}
+        value={password}
+        onChangeText={setPassword}
+        autoCapitalize="none"
+      />
+
+      <AppButton 
+        label={busy ? t('common.loading') : (isSignUp ? t('auth.signUpButton') : t('auth.signInButton'))} 
+        onPress={onSubmit} 
+      />
+
+      <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={styles.switchButton}>
+        <Text style={styles.switchText}>
+          {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.noAccount')}
+        </Text>
+      </TouchableOpacity>
 
       {error ? <AppBanner tone="error" text={error} /> : null}
     </AppContainer>
@@ -97,5 +89,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  switchButton: {
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  switchText: {
+    color: colors.muted,
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });
