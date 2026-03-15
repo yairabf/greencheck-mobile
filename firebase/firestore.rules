@@ -29,9 +29,21 @@ service cloud.firestore {
       return t in ['safety_check_started', 'safety_check_reminder', 'safety_check_closed'];
     }
 
+    function hasSharedTeam(uid) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && exists(/databases/$(database)/documents/users/$(uid))
+        && ('teamIds' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data)
+        && ('teamIds' in get(/databases/$(database)/documents/users/$(uid)).data)
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamIds
+             .hasAny(get(/databases/$(database)/documents/users/$(uid)).data.teamIds);
+    }
+
     // User profile + user devices
     match /users/{uid} {
-      allow read, create, update: if isSelf(uid);
+      // Teammates can read each other's basic profile for roster display.
+      allow read: if isSelf(uid) || hasSharedTeam(uid);
+      allow create, update: if isSelf(uid);
       allow delete: if false;
 
       match /devices/{deviceId} {
@@ -119,7 +131,6 @@ service cloud.firestore {
           && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.name == resource.data.name
-          && request.resource.data.activeIncidentId == resource.data.activeIncidentId
         );
       allow delete: if false;
 
