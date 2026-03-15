@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
+import { StatusCard } from '../components/StatusCard';
 import { colors, radius, spacing } from '../config/theme';
 import { useAuth } from '../services/AuthProvider';
 import { useProfile } from '../services/ProfileProvider';
+import { usePush } from '../services/PushProvider';
 import { useI18n } from '../i18n';
 
 export function ProfileScreen() {
   const { user } = useAuth();
   const { profile, saveProfile, saveLocale } = useProfile();
+  const { status: pushStatus, reason: pushReason, retry: retryPush } = usePush();
   const { locale, setLocale, t } = useI18n();
   const [name, setName] = useState(profile?.name ?? '');
   const [busy, setBusy] = useState(false);
@@ -87,6 +90,16 @@ export function ProfileScreen() {
         variant="secondary" 
         onPress={onChangeLanguage} 
       />
+
+      <View style={styles.divider} />
+
+      <StatusCard
+        title={t('home.pushStatus')}
+        subtitle={pushStatus === 'ok' ? t('home.pushRegistered') : pushReason ? t('home.push', { status: pushReason }) : t('home.push', { status: pushStatus })}
+      />
+      {pushStatus === 'error' ? (
+        <AppButton label={t('home.retryPush')} variant="secondary" onPress={() => void retryPush()} />
+      ) : null}
     </AppContainer>
   );
 }

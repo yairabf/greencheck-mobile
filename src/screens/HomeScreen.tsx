@@ -11,7 +11,6 @@ import { useAuth } from '../services/AuthProvider';
 import { triggerSafetyCheck, getActiveIncident, getIncidentResponseCounts, submitMyStatus, subscribeIncidentResponses, endSafetyCheck, reconcileActiveIncidentPointer, type IncidentResponseMap, type ResponseCounts } from '../services/incident';
 import { getTeamMembers } from '../services/teamMembers';
 import { useProfile } from '../services/ProfileProvider';
-import { usePush } from '../services/PushProvider';
 import { consumePendingIntent } from '../services/notificationIntent';
 import { consumeWebNotificationAction } from '../services/webNotificationAction';
 import { notifyTeamSafetyCheckStarted, notifyIncidentReminderNonResponders } from '../services/notify';
@@ -24,7 +23,6 @@ import { useT } from '../i18n';
 export function HomeScreen() {
   const { signOutUser, user } = useAuth();
   const { profile, refresh: refreshProfile } = useProfile();
-  const { status: pushStatus, reason: pushReason, retry: retryPush } = usePush();
   const navigation = useNavigation();
   const hasTeams = !!profile?.teamIds?.length;
   const t = useT();
@@ -336,13 +334,6 @@ export function HomeScreen() {
         title={t('home.activeCheck')}
         subtitle={incident ? t('home.activeIncident', { id: incident.id }) : t('home.noActiveCheck')}
       />
-      <StatusCard
-        title={t('home.pushStatus')}
-        subtitle={pushStatus === 'ok' ? t('home.pushRegistered') : pushReason ? t('home.push', { status: pushReason }) : t('home.push', { status: pushStatus })}
-      />
-      {pushStatus === 'error' ? (
-        <AppButton label={t('home.retryPush')} variant="secondary" onPress={() => void retryPush()} />
-      ) : null}
       <StatusCard
         title={t('home.teammates')}
         subtitle={t('home.teammatesStatus', { green: counts.green, notGreen: counts.not_green, noResponse: counts.no_response })}
