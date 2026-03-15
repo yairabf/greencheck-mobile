@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
@@ -9,6 +10,7 @@ import { useProfile } from '../services/ProfileProvider';
 import { useT } from '../i18n';
 
 export function CreateTeamScreen() {
+  const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { refresh } = useProfile();
   const t = useT();
@@ -43,6 +45,7 @@ export function CreateTeamScreen() {
 
   return (
     <AppContainer>
+      <AppButton label="← Back" variant="secondary" onPress={() => navigation.goBack()} />
       <View style={styles.wrap}>
         <Text style={styles.title}>{t('createTeam.title')}</Text>
         <Text style={styles.sub}>{t('team.yourTeam')}</Text>

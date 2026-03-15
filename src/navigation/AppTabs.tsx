@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
+import { Text } from 'react-native';
 import { HomeScreen } from '../screens/HomeScreen';
 import { IncidentScreen } from '../screens/IncidentScreen';
 import { TeamScreen } from '../screens/TeamScreen';
@@ -125,28 +125,28 @@ export function AppTabs() {
         name="Home"
         component={HomeTabStack}
         options={{
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={26} color={color} />,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>🏠</Text>,
         }}
       />
       <Tab.Screen
         name="Team"
         component={TeamTabStack}
         options={{
-          tabBarIcon: ({ color }) => <Ionicons name="people" size={26} color={color} />,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>👥</Text>,
         }}
       />
       <Tab.Screen
         name="History"
         component={HistoryTabStack}
         options={{
-          tabBarIcon: ({ color }) => <Ionicons name="time" size={26} color={color} />,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>🕒</Text>,
         }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ color }) => <Ionicons name="person" size={26} color={color} />,
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>👤</Text>,
         }}
       />
     </Tab.Navigator>

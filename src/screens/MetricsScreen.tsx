@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { EmptyState } from '../components/EmptyState';
@@ -10,6 +12,7 @@ import { getTeamMetrics, type TeamMetrics } from '../services/observability';
 import { useT } from '../i18n';
 
 export function MetricsScreen() {
+  const navigation = useNavigation<any>();
   const { profile } = useProfile();
   const t = useT();
   const teamId = profile?.teamIds?.[0];
@@ -41,6 +44,7 @@ export function MetricsScreen() {
 
   return (
     <AppContainer>
+      <AppButton label="← Back" variant="secondary" onPress={() => navigation.goBack()} />
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('metrics.title')}</Text>
       {loading ? <LoadingBlock label={t('common.loading')} /> : null}
       {error ? <AppBanner tone="error" text={error} /> : null}
