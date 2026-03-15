@@ -39,9 +39,10 @@ export function ProfileScreen() {
     const newLocale = locale === 'en' ? 'he' : 'en';
     try {
       await setLocale(newLocale);
-      setMsg(`Language updated to ${newLocale === 'en' ? 'English' : 'Hebrew'}.`);
+      const langLabel = newLocale === 'en' ? t('profile.english') : t('profile.hebrew');
+      setMsg(t('profile.languageUpdated', { lang: langLabel }));
       if (newLocale === 'he' || locale === 'he') {
-        setMsg((prev) => `${prev ?? ''} If direction looks wrong, fully close and reopen the app.`.trim());
+        setMsg((prev) => `${prev ?? ''} ${t('profile.directionHint')}`.trim());
       }
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Failed to change language');

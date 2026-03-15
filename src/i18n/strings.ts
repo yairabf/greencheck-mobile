@@ -45,6 +45,7 @@ export const strings = {
   'team.teamId': { en: 'Team ID', he: 'מזהה צוות' },
   'team.members': { en: 'Members', he: 'חברים' },
   'team.inviteMember': { en: 'Invite Member', he: 'הזמן חבר' },
+  'team.refreshTeam': { en: 'Refresh team', he: 'רענן צוות' },
   'team.leaveTeam': { en: 'Leave Team', he: 'עזוב צוות' },
 
   // Create team screen
@@ -78,6 +79,8 @@ export const strings = {
   'profile.english': { en: 'English', he: 'אנגלית' },
   'profile.hebrew': { en: 'Hebrew', he: 'עברית' },
   'profile.changeLanguage': { en: 'Change language', he: 'שנה שפה' },
+  'profile.languageUpdated': { en: 'Language updated to {lang}.', he: 'השפה עודכנה ל-{lang}.' },
+  'profile.directionHint': { en: 'If direction looks wrong, fully close and reopen the app.', he: 'אם כיוון התצוגה נראה שגוי, סגור ופתח מחדש את האפליקציה.' },
   'profile.restartRequired': { en: 'App restart required to change language direction', he: 'נדרש להפעיל מחדש את האפליקציה לשינוי כיוון השפה' },
   'profile.restart': { en: 'Restart Now', he: 'הפעל מחדש כעת' },
 
@@ -96,6 +99,8 @@ export const strings = {
 
   // Common
   'common.loading': { en: 'Loading...', he: 'טוען...' },
+  'common.back': { en: 'Back', he: 'חזרה' },
+  'common.refreshNow': { en: 'Refresh now', he: 'רענן עכשיו' },
   'common.error': { en: 'Error', he: 'שגיאה' },
   'common.success': { en: 'Success', he: 'הצלחה' },
   'common.cancel': { en: 'Cancel', he: 'ביטול' },

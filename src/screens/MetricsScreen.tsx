@@ -44,7 +44,7 @@ export function MetricsScreen() {
 
   return (
     <AppContainer>
-      <AppButton label="← Back" variant="secondary" onPress={() => navigation.goBack()} />
+      <AppButton label={`← ${t('common.back')}`} variant="secondary" onPress={() => navigation.goBack()} />
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('metrics.title')}</Text>
       {loading ? <LoadingBlock label={t('common.loading')} /> : null}
       {error ? <AppBanner tone="error" text={error} /> : null}

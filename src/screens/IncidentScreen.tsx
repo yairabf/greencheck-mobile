@@ -11,7 +11,7 @@ export function IncidentScreen() {
   const t = useT();
   return (
     <AppContainer>
-      <AppButton label="← Back" variant="secondary" onPress={() => navigation.goBack()} />
+      <AppButton label={`← ${t('common.back')}`} variant="secondary" onPress={() => navigation.goBack()} />
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('incident.title')}</Text>
       <StatusCard
         title={t('incident.status')}

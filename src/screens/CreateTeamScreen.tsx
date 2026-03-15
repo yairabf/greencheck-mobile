@@ -45,7 +45,7 @@ export function CreateTeamScreen() {
 
   return (
     <AppContainer>
-      <AppButton label="← Back" variant="secondary" onPress={() => navigation.goBack()} />
+      <AppButton label={`← ${t('common.back')}`} variant="secondary" onPress={() => navigation.goBack()} />
       <View style={styles.wrap}>
         <Text style={styles.title}>{t('createTeam.title')}</Text>
         <Text style={styles.sub}>{t('team.yourTeam')}</Text>

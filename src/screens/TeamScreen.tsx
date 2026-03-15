@@ -62,7 +62,7 @@ export function TeamScreen() {
         title={t('team.members')}
         subtitle={teamName ? `${teamName} • ${members.length}` : t('team.yourTeam')}
       />
-      <Text style={{ color: colors.muted, fontSize: 13 }}>Teammates</Text>
+      <Text style={{ color: colors.muted, fontSize: 13 }}>{t('home.teammates')}</Text>
 
       {loadingMembers ? <ActivityIndicator color={colors.primary} /> : null}
       {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
@@ -100,7 +100,7 @@ export function TeamScreen() {
           onPress={() => void onGenerateInvite()}
         />
         {invite ? <Text style={{ color: colors.text }}>{t('joinTeam.inviteCode')}: {invite}</Text> : null}
-        <AppButton label="Refresh team" variant="secondary" onPress={() => void loadMembers()} />
+        <AppButton label={t('team.refreshTeam')} variant="secondary" onPress={() => void loadMembers()} />
       </View>
     </AppContainer>
   );

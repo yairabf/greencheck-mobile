@@ -41,7 +41,7 @@ export function JoinTeamScreen() {
 
   return (
     <AppContainer>
-      <AppButton label="← Back" variant="secondary" onPress={() => navigation.goBack()} />
+      <AppButton label={`← ${t('common.back')}`} variant="secondary" onPress={() => navigation.goBack()} />
       <View style={styles.wrap}>
         <Text style={styles.title}>{t('joinTeam.title')}</Text>
         <Text style={styles.sub}>{t('joinTeam.inviteCode')}</Text>

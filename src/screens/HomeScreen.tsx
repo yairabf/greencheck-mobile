@@ -314,7 +314,7 @@ export function HomeScreen() {
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('home.dashboard')}</Text>
       <Text style={{ color: colors.muted }}>{t('home.hi')} {profile?.name ?? 'teammate'} 👋</Text>
       <AppButton
-        label={refreshing ? t('common.loading') : 'Refresh now'}
+        label={refreshing ? t('common.loading') : t('common.refreshNow')}
         variant="secondary"
         onPress={() => void onPullRefresh()}
       />
