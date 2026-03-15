@@ -1,8 +1,17 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const admin = require('firebase-admin');
+const webpush = require('web-push');
 
 admin.initializeApp();
 const db = admin.firestore();
+
+const WEB_PUSH_PUBLIC_KEY = process.env.WEB_PUSH_VAPID_PUBLIC_KEY || '';
+const WEB_PUSH_PRIVATE_KEY = process.env.WEB_PUSH_VAPID_PRIVATE_KEY || '';
+const WEB_PUSH_SUBJECT = process.env.WEB_PUSH_SUBJECT || 'mailto:yairabc@gmail.com';
+
+if (WEB_PUSH_PUBLIC_KEY && WEB_PUSH_PRIVATE_KEY) {
+  webpush.setVapidDetails(WEB_PUSH_SUBJECT, WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY);
+}
 
 function isExpoToken(token) {
   return typeof token === 'string' && (token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken['));
@@ -15,16 +24,27 @@ async function getTeamMemberIds(teamId) {
   return Array.isArray(memberIds) ? memberIds : [];
 }
 
-async function getTokensForUsers(userIds) {
-  const tokens = [];
+async function getDestinationsForUsers(userIds) {
+  const expoTokens = [];
+  const webSubscriptions = [];
+
   for (const uid of userIds) {
     const snap = await db.collection('users').doc(uid).collection('devices').where('active', '==', true).get();
     snap.forEach((d) => {
-      const t = d.get('pushToken');
-      if (isExpoToken(t)) tokens.push(t);
+      const token = d.get('pushToken');
+      if (isExpoToken(token)) expoTokens.push(token);
+
+      const subscription = d.get('webPushSubscription');
+      if (subscription && subscription.endpoint && subscription.keys) {
+        webSubscriptions.push(subscription);
+      }
     });
   }
-  return [...new Set(tokens)];
+
+  return {
+    expoTokens: [...new Set(expoTokens)],
+    webSubscriptions,
+  };
 }
 
 async function validateRequestOwnership(req) {
@@ -68,6 +88,31 @@ async function sendExpo(messages) {
   return { attempted: messages.length, sent, failed, errors };
 }
 
+async function sendWebPush(subscriptions, payload) {
+  if (!subscriptions.length) return { attempted: 0, sent: 0, failed: 0, errors: [] };
+  if (!WEB_PUSH_PUBLIC_KEY || !WEB_PUSH_PRIVATE_KEY) {
+    return { attempted: subscriptions.length, sent: 0, failed: subscriptions.length, errors: ['Web push VAPID keys are not configured'] };
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const errors = [];
+
+  await Promise.all(
+    subscriptions.map(async (subscription) => {
+      try {
+        await webpush.sendNotification(subscription, JSON.stringify(payload));
+        sent += 1;
+      } catch (err) {
+        failed += 1;
+        errors.push(err?.message || 'web push failed');
+      }
+    })
+  );
+
+  return { attempted: subscriptions.length, sent, failed, errors };
+}
+
 exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId}', async (event) => {
   const snap = event.data;
   if (!snap) return;
@@ -94,7 +139,7 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
   await idemRef.set({ createdAt: admin.firestore.FieldValue.serverTimestamp(), requestId: snap.id });
 
   const members = await getTeamMemberIds(teamId);
-  const tokens = await getTokensForUsers(members);
+  const { expoTokens, webSubscriptions } = await getDestinationsForUsers(members);
 
   const title = type === 'safety_check_started' ? 'Safety Check Started'
     : type === 'safety_check_reminder' ? 'Reminder: Safety Check Pending'
@@ -104,7 +149,7 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
     : type === 'safety_check_reminder' ? 'Please tap and report your status.'
     : (payload.autoClosed ? 'All teammates responded. Safety check closed.' : 'Safety check was ended by a teammate.');
 
-  const messages = tokens.map((to) => ({
+  const expoMessages = expoTokens.map((to) => ({
     to,
     sound: 'default',
     title,
@@ -112,11 +157,25 @@ exports.dispatchPushRequest = onDocumentCreated('pushDispatchRequests/{requestId
     data: { type, teamId, incidentId, ...payload }
   }));
 
-  const result = await sendExpo(messages);
+  const webPayload = {
+    title,
+    body,
+    data: { type, teamId, incidentId, ...payload }
+  };
+
+  const [expoResult, webResult] = await Promise.all([
+    sendExpo(expoMessages),
+    sendWebPush(webSubscriptions, webPayload)
+  ]);
+
   await snap.ref.update({
     status: 'processed',
-    result,
-    tokenCount: tokens.length,
+    result: {
+      expo: expoResult,
+      web: webResult,
+    },
+    tokenCount: expoTokens.length,
+    webSubscriptionCount: webSubscriptions.length,
     processedAt: admin.firestore.FieldValue.serverTimestamp()
   });
 });

@@ -8,6 +8,7 @@ type Extra = {
   firebaseMessagingSenderId?: string;
   firebaseAppId?: string;
   enableClientPush?: string;
+  webPushVapidPublicKey?: string;
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
@@ -20,6 +21,7 @@ export const env = {
   firebaseMessagingSenderId: extra.firebaseMessagingSenderId ?? '',
   firebaseAppId: extra.firebaseAppId ?? '',
   enableClientPush: extra.enableClientPush ?? 'false',
+  webPushVapidPublicKey: extra.webPushVapidPublicKey ?? '',
   authTestMode: (extra as any).authTestMode ?? process.env.EXPO_PUBLIC_AUTH_TEST_MODE ?? 'false',
 } as const;
 
