@@ -5,6 +5,8 @@ const distDir = path.join(__dirname, '..', 'dist');
 const indexPath = path.join(distDir, 'index.html');
 const manifestSrc = path.join(__dirname, '..', 'public', 'manifest.json');
 const manifestDst = path.join(distDir, 'manifest.json');
+const projectIconSrc = path.join(__dirname, '..', 'assets', 'icon.png');
+const distIconDst = path.join(distDir, 'icon.png');
 
 if (!fs.existsSync(indexPath)) {
   console.error('dist/index.html not found. Run expo export first.');
@@ -14,11 +16,15 @@ if (!fs.existsSync(indexPath)) {
 if (fs.existsSync(manifestSrc)) {
   fs.copyFileSync(manifestSrc, manifestDst);
 }
+if (fs.existsSync(projectIconSrc)) {
+  fs.copyFileSync(projectIconSrc, distIconDst);
+}
 
 let html = fs.readFileSync(indexPath, 'utf8');
 
 const inserts = [
   '<link rel="manifest" href="/manifest.json">',
+  '<link rel="apple-touch-icon" href="/icon.png">',
   '<meta name="apple-mobile-web-app-capable" content="yes">',
   '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
   '<meta name="apple-mobile-web-app-title" content="GreenCheck">'
