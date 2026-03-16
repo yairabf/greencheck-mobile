@@ -9,6 +9,7 @@ import { CreateTeamScreen } from '../screens/CreateTeamScreen';
 import { JoinTeamScreen } from '../screens/JoinTeamScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { TeamManagementScreen } from '../screens/TeamManagementScreen';
+import { EquipmentScreen } from '../screens/EquipmentScreen';
 import { colors } from '../config/theme';
 import { useT } from '../i18n';
 import { useAuth } from '../services/AuthProvider';
@@ -139,6 +140,14 @@ export function AppTabs() {
         options={{
           tabBarLabel: t('nav.team'),
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>👥</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="Equipment"
+        component={EquipmentScreen}
+        options={{
+          tabBarLabel: t('nav.equipment'),
+          tabBarIcon: () => <Text style={{ fontSize: 22 }}>🎒</Text>,
         }}
       />
       {isAdmin ? (

@@ -142,6 +142,36 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      match /equipment/{equipmentId} {
+        allow read: if isTeamMember(teamId);
+        allow create: if isTeamMember(teamId)
+          && (
+            !('adminIds' in teamDoc(teamId).data)
+            ? teamDoc(teamId).data.createdBy == request.auth.uid
+            : request.auth.uid in teamDoc(teamId).data.adminIds
+          )
+          && request.resource.data.name is string
+          && request.resource.data.serialNumber is string;
+
+        allow update: if isTeamMember(teamId)
+          && (
+            // admin can manage full equipment item
+            (
+              (!('adminIds' in teamDoc(teamId).data)
+                ? teamDoc(teamId).data.createdBy == request.auth.uid
+                : request.auth.uid in teamDoc(teamId).data.adminIds)
+            )
+            // assignee can only update status fields
+            || (
+              resource.data.assignedToUid == request.auth.uid
+              && request.resource.data.name == resource.data.name
+              && request.resource.data.serialNumber == resource.data.serialNumber
+              && request.resource.data.assignedToUid == resource.data.assignedToUid
+            )
+          );
+        allow delete: if false;
+      }
+
       match /incidents/{incidentId} {
         allow read, create, update: if isTeamMember(teamId);
         allow delete: if false;

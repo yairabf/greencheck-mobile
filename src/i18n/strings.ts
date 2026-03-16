@@ -16,6 +16,7 @@ export const strings = {
   'nav.history': { en: 'History', he: 'היסטוריה' },
   'nav.profile': { en: 'Profile', he: 'פרופיל' },
   'nav.teamManagement': { en: 'Team Mgmt', he: 'ניהול צוות' },
+  'nav.equipment': { en: 'Equipment', he: 'ציוד' },
 
   // Home screen
   'home.dashboard': { en: 'Team Dashboard', he: 'לוח בקרה' },
@@ -110,6 +111,22 @@ export const strings = {
   'team.adminRevoked': { en: 'Admin removed.', he: 'הרשאת מנהל הוסרה.' },
   'team.cannotRemoveLastAdmin': { en: 'Cannot remove the last admin.', he: 'לא ניתן להסיר את המנהל האחרון.' },
   'team.adminBadge': { en: 'Admin', he: 'מנהל' },
+
+  'equipment.title': { en: 'Equipment', he: 'ציוד' },
+  'equipment.myItems': { en: 'My equipment', he: 'הציוד שלי' },
+  'equipment.teamItems': { en: 'Team equipment', he: 'ציוד הצוות' },
+  'equipment.addItem': { en: 'Add item', he: 'הוסף פריט' },
+  'equipment.name': { en: 'Item name', he: 'שם פריט' },
+  'equipment.serial': { en: 'Serial number', he: 'מספר סידורי' },
+  'equipment.create': { en: 'Create equipment', he: 'צור פריט ציוד' },
+  'equipment.assignTo': { en: 'Assign to', he: 'שייך אל' },
+  'equipment.unassigned': { en: 'Unassigned', he: 'לא משויך' },
+  'equipment.inPossession': { en: 'In possession', he: 'ברשות המשתמש' },
+  'equipment.stored': { en: 'Stored', he: 'מאוחסן' },
+  'equipment.noItems': { en: 'No equipment yet', he: 'אין ציוד עדיין' },
+  'equipment.created': { en: 'Equipment created.', he: 'פריט ציוד נוצר.' },
+  'equipment.updated': { en: 'Equipment updated.', he: 'פריט ציוד עודכן.' },
+  'equipment.onlyAdmin': { en: 'Only team admin can manage equipment.', he: 'רק מנהל צוות יכול לנהל ציוד.' },
 
   // Create team screen
   'createTeam.title': { en: 'Create Team', he: 'צור צוות' },
