@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { AppButton } from '../components/AppButton';
 import { AppContainer } from '../components/AppContainer';
 import { StatusCard } from '../components/StatusCard';
@@ -36,7 +35,6 @@ function formatTsShort(ts: unknown): string {
 export function HomeScreen() {
   const { signOutUser, user } = useAuth();
   const { profile, refresh: refreshProfile } = useProfile();
-  const navigation = useNavigation();
   const hasTeams = !!profile?.teamIds?.length;
   const t = useT();
 
@@ -387,16 +385,6 @@ export function HomeScreen() {
           <Text style={{ color: colors.text, fontWeight: '700' }}>{t('home.incidentRoster')}</Text>
           <IncidentRoster members={roster} />
         </>
-      ) : null}
-      {!hasTeams ? (
-        <View style={{ gap: 10 }}>
-          <AppButton label={t('home.createTeam')} onPress={() => navigation.navigate('CreateTeam' as never)} />
-          <AppButton
-            label={t('home.joinTeam')}
-            variant="secondary"
-            onPress={() => navigation.navigate('JoinTeam' as never)}
-          />
-        </View>
       ) : null}
       <AppButton label={t('home.signOut')} variant="secondary" onPress={() => void signOutUser()} />
       </ScrollView>
