@@ -4,10 +4,13 @@ import { ensureTeamAdminIdsPersisted, getTeamAdminState, isTeamAdmin } from './t
 
 export type EquipmentStatus = 'in_possession' | 'stored';
 
+export type EquipmentCategory = 'general' | 'grenades';
+
 export type EquipmentItem = {
   id: string;
   name: string;
   serialNumber: string;
+  category: EquipmentCategory;
   assignedToUid: string | null;
   status: EquipmentStatus;
   createdBy: string;
@@ -36,6 +39,7 @@ function fromDoc(id: string, data: Record<string, unknown>): EquipmentItem {
     id,
     name: String(data.name ?? ''),
     serialNumber: String(data.serialNumber ?? ''),
+    category: (data.category as EquipmentCategory) ?? 'general',
     assignedToUid: data.assignedToUid ? String(data.assignedToUid) : null,
     status: (data.status as EquipmentStatus) ?? 'stored',
     createdBy: String(data.createdBy ?? ''),
@@ -51,7 +55,7 @@ export async function listEquipment(teamId: string): Promise<EquipmentItem[]> {
   return snap.docs.map((d) => fromDoc(d.id, d.data() as Record<string, unknown>));
 }
 
-export async function createEquipment(teamId: string, actorUid: string, name: string, serialNumber: string): Promise<string> {
+export async function createEquipment(teamId: string, actorUid: string, name: string, serialNumber: string, category: EquipmentCategory): Promise<string> {
   const itemRef = doc(equipmentCol(teamId));
 
   await ensureTeamAdminIdsPersisted(teamId);
@@ -70,6 +74,7 @@ export async function createEquipment(teamId: string, actorUid: string, name: st
   await setDoc(itemRef, {
     name: name.trim(),
     serialNumber: serialNumber.trim(),
+    category,
     assignedToUid: null,
     status: 'stored',
     createdBy: actorUid,
@@ -118,7 +123,7 @@ export async function updateEquipmentStatus(teamId: string, equipmentId: string,
   });
 }
 
-export async function editEquipment(teamId: string, equipmentId: string, actorUid: string, updates: { name: string; serialNumber: string }): Promise<void> {
+export async function editEquipment(teamId: string, equipmentId: string, actorUid: string, updates: { name: string; serialNumber: string; category: EquipmentCategory }): Promise<void> {
   await ensureTeamAdminIdsPersisted(teamId);
   const admin = await isTeamAdmin(teamId, actorUid);
   if (!admin) throw new Error('Only team admin can edit equipment');
@@ -134,6 +139,7 @@ export async function editEquipment(teamId: string, equipmentId: string, actorUi
   await updateDoc(equipmentRef(teamId, equipmentId), {
     name: updates.name.trim(),
     serialNumber: updates.serialNumber.trim(),
+    category: updates.category,
     updatedBy: actorUid,
     updatedAt: serverTimestamp(),
   });

@@ -8,7 +8,7 @@ import { useAuth } from '../services/AuthProvider';
 import { useProfile } from '../services/ProfileProvider';
 import { getTeamMembers, type TeamMember } from '../services/teamMembers';
 import { assignTeamAdmin, removeTeamMember, revokeTeamAdmin } from '../services/teamAdmin';
-import { assignEquipment, createEquipment, deleteEquipment, editEquipment, listEquipment, type EquipmentItem } from '../services/equipment';
+import { assignEquipment, createEquipment, deleteEquipment, editEquipment, listEquipment, type EquipmentCategory, type EquipmentItem } from '../services/equipment';
 import { useT } from '../i18n';
 
 export function TeamManagementScreen() {
@@ -24,22 +24,26 @@ export function TeamManagementScreen() {
   const [name, setName] = useState('');
   const [serial, setSerial] = useState('');
   const [busyCreateEquipment, setBusyCreateEquipment] = useState(false);
+  const [category, setCategory] = useState<EquipmentCategory>('general');
   const [assignModalItemId, setAssignModalItemId] = useState<string | null>(null);
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editSerial, setEditSerial] = useState('');
+  const [editCategory, setEditCategory] = useState<EquipmentCategory>('general');
   const [busyEdit, setBusyEdit] = useState(false);
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [section, setSection] = useState<'teammates' | 'equipment'>('teammates');
   const [equipmentTab, setEquipmentTab] = useState<'stored' | 'in_possession'>('stored');
+  const [equipmentCategoryTab, setEquipmentCategoryTab] = useState<EquipmentCategory>('general');
 
   const teamId = profile?.teamIds?.[0] ?? null;
   const isAdmin = !!members.find((m) => m.uid === user?.uid)?.isAdmin;
 
-  const storedItems = useMemo(() => items.filter((x) => x.status === 'stored'), [items]);
-  const possessedItems = useMemo(() => items.filter((x) => x.status === 'in_possession'), [items]);
+  const categoryItems = useMemo(() => items.filter((x) => (x.category ?? 'general') === equipmentCategoryTab), [items, equipmentCategoryTab]);
+  const storedItems = useMemo(() => categoryItems.filter((x) => x.status === 'stored'), [categoryItems]);
+  const possessedItems = useMemo(() => categoryItems.filter((x) => x.status === 'in_possession'), [categoryItems]);
 
   async function loadAll() {
     if (!teamId) return;
@@ -65,9 +69,10 @@ export function TeamManagementScreen() {
     setError(null);
     setMsg(null);
     try {
-      await createEquipment(teamId, user.uid, name, serial);
+      await createEquipment(teamId, user.uid, name, serial, category);
       setName('');
       setSerial('');
+      setCategory('general');
       setMsg(t('equipment.created'));
       await loadAll();
     } catch (e: any) {
@@ -96,7 +101,7 @@ export function TeamManagementScreen() {
     setError(null);
     setMsg(null);
     try {
-      await editEquipment(teamId, editItemId, user.uid, { name: editName, serialNumber: editSerial });
+      await editEquipment(teamId, editItemId, user.uid, { name: editName, serialNumber: editSerial, category: editCategory });
       setMsg(t('equipment.updated'));
       setEditItemId(null);
       await loadAll();
@@ -219,7 +224,25 @@ export function TeamManagementScreen() {
           <View style={{ gap: 6 }}>
             <TextInput style={{ backgroundColor: colors.card, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.name')} placeholderTextColor={colors.muted} value={name} onChangeText={setName} />
             <TextInput style={{ backgroundColor: colors.card, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.serial')} placeholderTextColor={colors.muted} value={serial} onChangeText={setSerial} />
+            <Text style={{ color: colors.muted }}>{t('equipment.category')}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <AppButton label={t('equipment.categoryGeneral')} variant={category === 'general' ? 'primary' : 'secondary'} onPress={() => setCategory('general')} />
+              <AppButton label={t('equipment.categoryGrenades')} variant={category === 'grenades' ? 'primary' : 'secondary'} onPress={() => setCategory('grenades')} />
+            </View>
             <AppButton label={busyCreateEquipment ? t('common.loading') : t('equipment.create')} onPress={() => void onCreateEquipment()} />
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            <AppButton
+              label={`${t('equipment.tabCategoryGeneral')} (${items.filter((x) => (x.category ?? 'general') === 'general').length})`}
+              variant={equipmentCategoryTab === 'general' ? 'primary' : 'secondary'}
+              onPress={() => setEquipmentCategoryTab('general')}
+            />
+            <AppButton
+              label={`${t('equipment.tabCategoryGrenades')} (${items.filter((x) => (x.category ?? 'general') === 'grenades').length})`}
+              variant={equipmentCategoryTab === 'grenades' ? 'primary' : 'secondary'}
+              onPress={() => setEquipmentCategoryTab('grenades')}
+            />
           </View>
 
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
@@ -242,7 +265,7 @@ export function TeamManagementScreen() {
               <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
-                <AppButton label={t('equipment.edit')} variant="secondary" onPress={() => { setEditItemId(it.id); setEditName(it.name); setEditSerial(it.serialNumber); }} />
+                <AppButton label={t('equipment.edit')} variant="secondary" onPress={() => { setEditItemId(it.id); setEditName(it.name); setEditSerial(it.serialNumber); setEditCategory(it.category ?? 'general'); }} />
                 <AppButton label={busyDeleteId === it.id ? t('common.loading') : t('equipment.delete')} variant="danger" onPress={() => void onDeleteItem(it.id)} />
               </View>
             </View>
@@ -267,6 +290,11 @@ export function TeamManagementScreen() {
                 <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>{t('equipment.edit')}</Text>
                 <TextInput style={{ backgroundColor: colors.cardAlt, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.name')} placeholderTextColor={colors.muted} value={editName} onChangeText={setEditName} />
                 <TextInput style={{ backgroundColor: colors.cardAlt, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.serial')} placeholderTextColor={colors.muted} value={editSerial} onChangeText={setEditSerial} />
+                <Text style={{ color: colors.muted }}>{t('equipment.category')}</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <AppButton label={t('equipment.categoryGeneral')} variant={editCategory === 'general' ? 'primary' : 'secondary'} onPress={() => setEditCategory('general')} />
+                  <AppButton label={t('equipment.categoryGrenades')} variant={editCategory === 'grenades' ? 'primary' : 'secondary'} onPress={() => setEditCategory('grenades')} />
+                </View>
                 <AppButton label={busyEdit ? t('common.loading') : t('equipment.saveItem')} onPress={() => void onSaveEdit()} />
                 <AppButton label={t('equipment.close')} variant="danger" onPress={() => setEditItemId(null)} />
               </View>
