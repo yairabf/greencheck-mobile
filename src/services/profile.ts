@@ -34,10 +34,15 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 }
 
 export async function createUserProfile(user: User, name: string): Promise<void> {
+  const baseFromEmail = user.email?.split('@')[0]?.trim() || '';
+  const fallback = `User-${user.uid.slice(0, 6)}`;
+  const finalName = (name?.trim() || baseFromEmail || fallback).slice(0, 40);
+
   await setDoc(profileRef(user.uid), {
-    name: name.trim(),
+    name: finalName,
     phone: user.phoneNumber ?? '',
     teamIds: [],
+    locale: 'en',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

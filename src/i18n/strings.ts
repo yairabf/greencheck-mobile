@@ -1,14 +1,14 @@
 export const strings = {
   // Auth screen
   'auth.title': { en: 'GreenCheck', he: 'GreenCheck' },
-  'auth.signIn': { en: 'Sign in to your account', he: 'התחבר לחשבון שלך' },
-  'auth.signUp': { en: 'Create account to join your team', he: 'צור חשבון כדי להצטרף לצוות' },
+  'auth.signIn': { en: 'Login', he: 'התחברות' },
+  'auth.signUp': { en: "Don't have an account? Sign up", he: 'אין חשבון? הירשם' },
   'auth.email': { en: 'Email', he: 'אימייל' },
   'auth.password': { en: 'Password', he: 'סיסמה' },
-  'auth.signInButton': { en: 'Sign In', he: 'התחבר' },
-  'auth.signUpButton': { en: 'Sign Up', he: 'הירשם' },
-  'auth.alreadyHaveAccount': { en: 'Already have an account? Sign In', he: 'כבר יש לך חשבון? התחבר' },
-  'auth.noAccount': { en: "Don't have an account? Sign Up", he: 'אין לך חשבון? הירשם' },
+  'auth.signInButton': { en: 'Login', he: 'התחברות' },
+  'auth.signUpButton': { en: 'Sign up', he: 'הרשמה' },
+  'auth.alreadyHaveAccount': { en: 'Already have an account? Login', he: 'יש לך כבר חשבון? התחבר' },
+  'auth.noAccount': { en: "Don’t have an account? Sign up", he: 'אין לך חשבון? הירשם' },
 
   // Navigation
   'nav.home': { en: 'Home', he: 'בית' },

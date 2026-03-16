@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type PropsWith
 import type { User } from 'firebase/auth';
 import { listenAuthState, logout, signInWithEmail, signUpWithEmail } from './auth';
 import { hasFirebaseEnv } from '../config/env';
+import { createUserProfile, getUserProfile } from './profile';
 
 type AuthContextValue = {
   user: User | null;
@@ -28,6 +29,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const unsub = listenAuthState((nextUser) => {
       setUser(nextUser);
       setLoading(false);
+      if (nextUser) {
+        void (async () => {
+          const existing = await getUserProfile(nextUser.uid);
+          if (!existing) {
+            await createUserProfile(nextUser, '');
+          }
+        })();
+      }
     });
 
     return unsub;
@@ -40,7 +49,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   async function signUp(email: string, password: string) {
     if (!hasFirebaseEnv) throw new Error('Firebase is not configured.');
-    await signUpWithEmail(email, password);
+    const cred = await signUpWithEmail(email, password);
+    const nextUser = cred?.user;
+    if (nextUser) {
+      await createUserProfile(nextUser, '');
+    }
   }
 
   async function signOutUser() {
