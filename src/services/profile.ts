@@ -3,7 +3,6 @@ import {
   getDoc,
   serverTimestamp,
   setDoc,
-  updateDoc,
   type DocumentData,
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
@@ -49,10 +48,14 @@ export async function createUserProfile(user: User, name: string): Promise<void>
 }
 
 export async function updateUserProfile(uid: string, updates: Pick<UserProfile, 'name'>): Promise<void> {
-  await updateDoc(profileRef(uid), {
-    name: updates.name.trim(),
-    updatedAt: serverTimestamp(),
-  });
+  await setDoc(
+    profileRef(uid),
+    {
+      name: updates.name.trim(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 }
 
 export async function updateUserLocale(uid: string, locale: 'en' | 'he'): Promise<void> {
