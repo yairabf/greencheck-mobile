@@ -52,34 +52,35 @@ export async function listEquipment(teamId: string): Promise<EquipmentItem[]> {
 
 export async function createEquipment(teamId: string, actorUid: string, name: string, serialNumber: string): Promise<string> {
   const itemRef = doc(equipmentCol(teamId));
-  const { firestore } = getFirebaseServices();
 
-  await runTransaction(firestore, async (tx) => {
-    const tSnap = await tx.get(teamRef(teamId));
-    if (!tSnap.exists()) throw new Error('Team not found');
+  const tSnap = await getDoc(teamRef(teamId));
+  if (!tSnap.exists()) throw new Error('Team not found');
 
-    const createdBy = String(tSnap.data().createdBy ?? '');
-    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
-    if (!adminIds.includes(actorUid)) throw new Error('Only team admin can create equipment');
+  const teamData = tSnap.data() as Record<string, unknown>;
+  const createdBy = String(teamData.createdBy ?? '');
+  const rawAdminIds = Array.isArray(teamData.adminIds) ? (teamData.adminIds as string[]) : [];
+  const adminIds = Array.from(new Set([createdBy, ...rawAdminIds]));
 
-    // enforce unique serial per team
-    const existing = await getDocs(query(equipmentCol(teamId)));
-    for (const d of existing.docs) {
-      if (String(d.data().serialNumber ?? '').toLowerCase() === serialNumber.trim().toLowerCase()) {
-        throw new Error('Serial number already exists');
-      }
+  if (!adminIds.includes(actorUid)) throw new Error('Only team admin can create equipment');
+
+  // enforce unique serial per team
+  const existing = await getDocs(query(equipmentCol(teamId)));
+  const normalized = serialNumber.trim().toLowerCase();
+  for (const d of existing.docs) {
+    if (String(d.data().serialNumber ?? '').trim().toLowerCase() === normalized) {
+      throw new Error('Serial number already exists');
     }
+  }
 
-    tx.set(itemRef, {
-      name: name.trim(),
-      serialNumber: serialNumber.trim(),
-      assignedToUid: null,
-      status: 'stored',
-      createdBy: actorUid,
-      createdAt: serverTimestamp(),
-      updatedBy: actorUid,
-      updatedAt: serverTimestamp(),
-    });
+  await setDoc(itemRef, {
+    name: name.trim(),
+    serialNumber: serialNumber.trim(),
+    assignedToUid: null,
+    status: 'stored',
+    createdBy: actorUid,
+    createdAt: serverTimestamp(),
+    updatedBy: actorUid,
+    updatedAt: serverTimestamp(),
   });
 
   return itemRef.id;
