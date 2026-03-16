@@ -7,6 +7,7 @@ import { colors, radius, spacing } from '../config/theme';
 import { useAuth } from '../services/AuthProvider';
 import { useProfile } from '../services/ProfileProvider';
 import { usePush } from '../services/PushProvider';
+import { changePassword } from '../services/auth';
 import { useI18n } from '../i18n';
 
 export function ProfileScreen() {
@@ -16,6 +17,8 @@ export function ProfileScreen() {
   const { locale, setLocale, t } = useI18n();
   const [name, setName] = useState(profile?.name ?? '');
   const [busy, setBusy] = useState(false);
+  const [busyPassword, setBusyPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => setName(profile?.name ?? ''), [profile?.name]);
@@ -35,6 +38,30 @@ export function ProfileScreen() {
       setMsg(e instanceof Error ? e.message : t('profile.failedSave'));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onChangePassword() {
+    const pwd = newPassword.trim();
+    if (pwd.length < 6) {
+      setMsg(t('profile.passwordTooShort'));
+      return;
+    }
+    setBusyPassword(true);
+    setMsg(null);
+    try {
+      await changePassword(pwd);
+      setNewPassword('');
+      setMsg(t('profile.passwordUpdated'));
+    } catch (e: any) {
+      const raw = String(e?.message ?? '');
+      if (raw.includes('requires-recent-login')) {
+        setMsg(t('profile.passwordChangeRequiresRelogin'));
+      } else {
+        setMsg(e instanceof Error ? e.message : t('profile.failedChangePassword'));
+      }
+    } finally {
+      setBusyPassword(false);
     }
   }
 
@@ -77,8 +104,22 @@ export function ProfileScreen() {
         />
       </View>
       <AppButton label={busy ? t('common.loading') : t('common.save')} onPress={onSave} />
+
+      <View style={styles.fieldWrap}>
+        <Text style={styles.label}>{t('profile.newPassword')}</Text>
+        <TextInput
+          style={styles.input}
+          value={newPassword}
+          onChangeText={setNewPassword}
+          placeholder={t('profile.newPassword')}
+          placeholderTextColor={colors.muted}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+      </View>
+      <AppButton label={busyPassword ? t('common.loading') : t('profile.changePassword')} variant="secondary" onPress={onChangePassword} />
       {msg ? <Text style={styles.msg}>{msg}</Text> : null}
-      
+
       <View style={styles.divider} />
       
       <Text style={styles.sectionTitle}>{t('profile.language')}</Text>

@@ -10,6 +10,7 @@ import { useAuth } from '../services/AuthProvider';
 import { createTeamInvite } from '../services/invite';
 import { useProfile } from '../services/ProfileProvider';
 import { getTeamMembers, setMyTeamActiveState, type TeamMember } from '../services/teamMembers';
+import { leaveTeam, removeTeamMember } from '../services/teamAdmin';
 import { useT } from '../i18n';
 
 export function TeamScreen() {
@@ -24,6 +25,9 @@ export function TeamScreen() {
   const [teamName, setTeamName] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [busyAvailability, setBusyAvailability] = useState(false);
+  const [busyLeave, setBusyLeave] = useState(false);
+  const [busyRemoveUid, setBusyRemoveUid] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
   async function onGenerateInvite() {
     if (!user || !profile?.teamIds?.length) return;
@@ -46,6 +50,41 @@ export function TeamScreen() {
       await loadMembers();
     } finally {
       setBusyAvailability(false);
+    }
+  }
+
+  async function onLeaveTeam() {
+    if (!user || !profile?.teamIds?.length) return;
+    setBusyLeave(true);
+    setError(null);
+    setMsg(null);
+    try {
+      await leaveTeam(profile.teamIds[0], user.uid);
+      setMsg(t('team.leftTeam'));
+      await loadMembers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.failedAction'));
+    } finally {
+      setBusyLeave(false);
+    }
+  }
+
+  async function onRemoveMember(targetUid: string) {
+    if (!user || !profile?.teamIds?.length) return;
+    setBusyRemoveUid(targetUid);
+    setError(null);
+    setMsg(null);
+    try {
+      await removeTeamMember(profile.teamIds[0], user.uid, targetUid);
+      setMsg(t('team.removedMember'));
+      await loadMembers();
+    } catch (e: any) {
+      const raw = String(e?.message || '');
+      if (raw.includes('Only team creator')) setError(t('team.onlyCreatorCanRemove'));
+      else if (raw.includes('Cannot remove team creator')) setError(t('team.cannotRemoveCreator'));
+      else setError(e instanceof Error ? e.message : t('common.failedAction'));
+    } finally {
+      setBusyRemoveUid(null);
     }
   }
 
@@ -85,17 +124,26 @@ export function TeamScreen() {
 
       {loadingMembers ? <ActivityIndicator color={colors.primary} /> : null}
       {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
+      {msg ? <Text style={{ color: colors.muted }}>{msg}</Text> : null}
 
       <View style={{ gap: 10 }}>
         {members.map((m) => (
-          <MemberRow
-            key={m.uid}
-            name={m.name}
-            phone={m.phone}
-            isCreator={m.isCreator}
-            isYou={m.uid === user?.uid}
-            active={m.active}
-          />
+          <View key={m.uid} style={{ gap: 6 }}>
+            <MemberRow
+              name={m.name}
+              phone={m.phone}
+              isCreator={m.isCreator}
+              isYou={m.uid === user?.uid}
+              active={m.active}
+            />
+            {(members.find((x) => x.uid === user?.uid)?.isCreator && m.uid !== user?.uid) ? (
+              <AppButton
+                label={busyRemoveUid === m.uid ? t('common.loading') : t('team.removeMember')}
+                variant="danger"
+                onPress={() => void onRemoveMember(m.uid)}
+              />
+            ) : null}
+          </View>
         ))}
       </View>
 
@@ -121,6 +169,11 @@ export function TeamScreen() {
         />
         {invite ? <Text style={{ color: colors.text }}>{t('joinTeam.inviteCode')}: {invite}</Text> : null}
         <AppButton label={t('team.refreshTeam')} variant="secondary" onPress={() => void loadMembers()} />
+        <AppButton
+          label={busyLeave ? t('common.loading') : t('team.leaveTeamAction')}
+          variant="danger"
+          onPress={() => void onLeaveTeam()}
+        />
       </View>
     </AppContainer>
   );

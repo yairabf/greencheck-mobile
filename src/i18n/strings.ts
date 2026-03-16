@@ -80,6 +80,12 @@ export const strings = {
   'team.statusInactive': { en: 'Inactive', he: 'לא פעיל' },
   'team.creator': { en: 'Creator', he: 'יוצר' },
   'team.noPhone': { en: 'No phone', he: 'אין טלפון' },
+  'team.leaveTeamAction': { en: 'Leave team', he: 'עזוב צוות' },
+  'team.removeMember': { en: 'Remove member', he: 'הסר חבר צוות' },
+  'team.removedMember': { en: 'Member removed.', he: 'חבר הצוות הוסר.' },
+  'team.leftTeam': { en: 'You left the team.', he: 'עזבת את הצוות.' },
+  'team.cannotRemoveCreator': { en: 'Cannot remove team creator.', he: 'לא ניתן להסיר את יוצר הצוות.' },
+  'team.onlyCreatorCanRemove': { en: 'Only team creator can remove members.', he: 'רק יוצר הצוות יכול להסיר חברים.' },
 
   // Create team screen
   'createTeam.title': { en: 'Create Team', he: 'צור צוות' },
@@ -139,6 +145,12 @@ export const strings = {
   'profile.saved': { en: 'Saved.', he: 'נשמר.' },
   'profile.failedSave': { en: 'Failed to save profile', he: 'שמירת הפרופיל נכשלה' },
   'profile.failedChangeLanguage': { en: 'Failed to change language', he: 'שינוי השפה נכשל' },
+  'profile.newPassword': { en: 'New password', he: 'סיסמה חדשה' },
+  'profile.changePassword': { en: 'Change password', he: 'שנה סיסמה' },
+  'profile.passwordUpdated': { en: 'Password updated.', he: 'הסיסמה עודכנה.' },
+  'profile.passwordTooShort': { en: 'Password must be at least 6 characters.', he: 'הסיסמה חייבת להכיל לפחות 6 תווים.' },
+  'profile.passwordChangeRequiresRelogin': { en: 'For security, please log out and log in again before changing password.', he: 'מטעמי אבטחה, התנתק והתחבר מחדש לפני שינוי סיסמה.' },
+  'profile.failedChangePassword': { en: 'Failed to change password', he: 'שינוי הסיסמה נכשל' },
   'profile.restartRequired': { en: 'App restart required to change language direction', he: 'נדרש להפעיל מחדש את האפליקציה לשינוי כיוון השפה' },
   'profile.restart': { en: 'Restart Now', he: 'הפעל מחדש כעת' },
 

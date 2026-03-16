@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  updatePassword,
   type User,
 } from 'firebase/auth';
 import { getFirebaseServices } from './firebase';
@@ -25,4 +26,11 @@ export async function signUpWithEmail(email: string, password: string) {
 export async function logout() {
   const { auth } = getFirebaseServices();
   return signOut(auth);
+}
+
+export async function changePassword(newPassword: string) {
+  const { auth } = getFirebaseServices();
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+  return updatePassword(user, newPassword);
 }
