@@ -24,6 +24,7 @@ export function TeamManagementScreen() {
   const [name, setName] = useState('');
   const [serial, setSerial] = useState('');
   const [busyCreateEquipment, setBusyCreateEquipment] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [category, setCategory] = useState<EquipmentCategory>('general');
   const [assignModalItemId, setAssignModalItemId] = useState<string | null>(null);
   const [editItemId, setEditItemId] = useState<string | null>(null);
@@ -73,6 +74,7 @@ export function TeamManagementScreen() {
       setName('');
       setSerial('');
       setCategory('general');
+      setCreateModalOpen(false);
       setMsg(t('equipment.created'));
       await loadAll();
     } catch (e: any) {
@@ -221,16 +223,7 @@ export function TeamManagementScreen() {
       ) : (
         <>
           <StatusCard title={t('equipment.teamItems')} subtitle={`${items.length}`} />
-          <View style={{ gap: 6 }}>
-            <TextInput style={{ backgroundColor: colors.card, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.name')} placeholderTextColor={colors.muted} value={name} onChangeText={setName} />
-            <TextInput style={{ backgroundColor: colors.card, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.serial')} placeholderTextColor={colors.muted} value={serial} onChangeText={setSerial} />
-            <Text style={{ color: colors.muted }}>{t('equipment.category')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <AppButton label={t('equipment.categoryGeneral')} variant={category === 'general' ? 'primary' : 'secondary'} onPress={() => setCategory('general')} />
-              <AppButton label={t('equipment.categoryGrenades')} variant={category === 'grenades' ? 'primary' : 'secondary'} onPress={() => setCategory('grenades')} />
-            </View>
-            <AppButton label={busyCreateEquipment ? t('common.loading') : t('equipment.create')} onPress={() => void onCreateEquipment()} />
-          </View>
+          <AppButton label={t('equipment.addItem')} onPress={() => setCreateModalOpen(true)} />
 
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
             <AppButton
@@ -270,6 +263,23 @@ export function TeamManagementScreen() {
               </View>
             </View>
           ))}
+
+          <Modal visible={createModalOpen} transparent animationType="fade" onRequestClose={() => setCreateModalOpen(false)}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 16 }}>
+              <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, gap: 8 }}>
+                <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>{t('equipment.addItemModalTitle')}</Text>
+                <TextInput style={{ backgroundColor: colors.cardAlt, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.name')} placeholderTextColor={colors.muted} value={name} onChangeText={setName} />
+                <TextInput style={{ backgroundColor: colors.cardAlt, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.serial')} placeholderTextColor={colors.muted} value={serial} onChangeText={setSerial} />
+                <Text style={{ color: colors.muted }}>{t('equipment.category')}</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <AppButton label={t('equipment.categoryGeneral')} variant={category === 'general' ? 'primary' : 'secondary'} onPress={() => setCategory('general')} />
+                  <AppButton label={t('equipment.categoryGrenades')} variant={category === 'grenades' ? 'primary' : 'secondary'} onPress={() => setCategory('grenades')} />
+                </View>
+                <AppButton label={busyCreateEquipment ? t('common.loading') : t('equipment.create')} onPress={() => void onCreateEquipment()} />
+                <AppButton label={t('equipment.close')} variant="danger" onPress={() => setCreateModalOpen(false)} />
+              </View>
+            </View>
+          </Modal>
 
           <Modal visible={!!assignModalItemId} transparent animationType="fade" onRequestClose={() => setAssignModalItemId(null)}>
             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 16 }}>

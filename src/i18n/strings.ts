@@ -118,6 +118,7 @@ export const strings = {
   'equipment.myItems': { en: 'My equipment', he: 'הציוד שלי' },
   'equipment.teamItems': { en: 'Team equipment', he: 'ציוד הצוות' },
   'equipment.addItem': { en: 'Add item', he: 'הוסף פריט' },
+  'equipment.addItemModalTitle': { en: 'Create equipment item', he: 'יצירת פריט ציוד' },
   'equipment.name': { en: 'Item name', he: 'שם פריט' },
   'equipment.serial': { en: 'Serial number', he: 'מספר סידורי' },
   'equipment.category': { en: 'Category', he: 'קטגוריה' },
