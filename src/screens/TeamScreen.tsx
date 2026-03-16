@@ -128,27 +128,37 @@ export function TeamScreen() {
 
       <View style={{ gap: 10 }}>
         {members.map((m) => (
-          <View key={m.uid} style={{ gap: 6 }}>
-            <MemberRow
-              name={m.name}
-              phone={m.phone}
-              isCreator={m.isCreator}
-              isYou={m.uid === user?.uid}
-              active={m.active}
-            />
-            {(members.find((x) => x.uid === user?.uid)?.isCreator && m.uid !== user?.uid) ? (
-              <AppButton
-                label={busyRemoveUid === m.uid ? t('common.loading') : t('team.removeMember')}
-                variant="danger"
-                onPress={() => void onRemoveMember(m.uid)}
-              />
-            ) : null}
-          </View>
+          <MemberRow
+            key={m.uid}
+            name={m.name}
+            phone={m.phone}
+            isCreator={m.isCreator}
+            isYou={m.uid === user?.uid}
+            active={m.active}
+          />
         ))}
       </View>
 
       {!loadingMembers && members.length === 0 ? (
         <Text style={{ color: colors.muted }}>{t('team.yourTeam')}</Text>
+      ) : null}
+
+      {(members.find((x) => x.uid === user?.uid)?.isCreator && members.length > 1) ? (
+        <View style={{ gap: 8, marginTop: 4 }}>
+          <StatusCard
+            title={t('team.adminTools')}
+            subtitle={t('team.manageMembers')}
+          />
+          <Text style={{ color: colors.muted, fontSize: 13 }}>{t('team.selectMemberToRemove')}</Text>
+          {members.filter((m) => m.uid !== user?.uid).map((m) => (
+            <AppButton
+              key={`rm-${m.uid}`}
+              label={busyRemoveUid === m.uid ? t('common.loading') : `${t('team.removeMember')}: ${m.name}`}
+              variant="danger"
+              onPress={() => void onRemoveMember(m.uid)}
+            />
+          ))}
+        </View>
       ) : null}
 
       <View style={{ gap: 10 }}>
