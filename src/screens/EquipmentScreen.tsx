@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Modal, Text, TextInput, View } from 'react-native';
 import { AppContainer } from '../components/AppContainer';
 import { AppButton } from '../components/AppButton';
 import { StatusCard } from '../components/StatusCard';
@@ -20,6 +20,7 @@ export function EquipmentScreen() {
   const [serial, setSerial] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [assignModalItemId, setAssignModalItemId] = useState<string | null>(null);
 
   const teamId = profile?.teamIds?.[0] ?? null;
   const me = members.find((m) => m.uid === user?.uid);
@@ -118,11 +119,7 @@ export function EquipmentScreen() {
               <Text style={{ color: colors.text, fontWeight: '700' }}>{it.name}</Text>
               <Text style={{ color: colors.muted }}>{it.serialNumber}</Text>
               <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>
-              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                {[null, ...members.map((m) => m.uid)].map((uidOpt, idx) => (
-                  <AppButton key={idx} label={uidOpt ? (members.find((m) => m.uid === uidOpt)?.name || '—') : t('equipment.unassigned')} variant="secondary" onPress={() => void onAssign(it.id, uidOpt)} />
-                ))}
-              </View>
+              <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
             </View>
           ))}
 
@@ -132,13 +129,39 @@ export function EquipmentScreen() {
               <Text style={{ color: colors.text, fontWeight: '700' }}>{it.name}</Text>
               <Text style={{ color: colors.muted }}>{it.serialNumber}</Text>
               <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>
-              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                {[null, ...members.map((m) => m.uid)].map((uidOpt, idx) => (
-                  <AppButton key={idx} label={uidOpt ? (members.find((m) => m.uid === uidOpt)?.name || '—') : t('equipment.unassigned')} variant="secondary" onPress={() => void onAssign(it.id, uidOpt)} />
-                ))}
-              </View>
+              <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
             </View>
           ))}
+
+          <Modal visible={!!assignModalItemId} transparent animationType="fade" onRequestClose={() => setAssignModalItemId(null)}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 16 }}>
+              <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, gap: 8 }}>
+                <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>{t('equipment.chooseAssignee')}</Text>
+                <AppButton
+                  label={t('equipment.unassigned')}
+                  variant="secondary"
+                  onPress={() => {
+                    if (!assignModalItemId) return;
+                    void onAssign(assignModalItemId, null);
+                    setAssignModalItemId(null);
+                  }}
+                />
+                {members.map((m) => (
+                  <AppButton
+                    key={`assignee-${m.uid}`}
+                    label={m.name || t('team.unnamed')}
+                    variant="secondary"
+                    onPress={() => {
+                      if (!assignModalItemId) return;
+                      void onAssign(assignModalItemId, m.uid);
+                      setAssignModalItemId(null);
+                    }}
+                  />
+                ))}
+                <AppButton label={t('equipment.close')} variant="danger" onPress={() => setAssignModalItemId(null)} />
+              </View>
+            </View>
+          </Modal>
         </>
       ) : null}
     </AppContainer>

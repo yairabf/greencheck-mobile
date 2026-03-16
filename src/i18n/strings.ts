@@ -120,6 +120,8 @@ export const strings = {
   'equipment.serial': { en: 'Serial number', he: 'מספר סידורי' },
   'equipment.create': { en: 'Create equipment', he: 'צור פריט ציוד' },
   'equipment.assignTo': { en: 'Assign to', he: 'שייך אל' },
+  'equipment.chooseAssignee': { en: 'Choose assignee', he: 'בחר משויך' },
+  'equipment.close': { en: 'Close', he: 'סגור' },
   'equipment.unassigned': { en: 'Unassigned', he: 'לא משויך' },
   'equipment.inPossession': { en: 'In possession', he: 'ברשות המשתמש' },
   'equipment.stored': { en: 'Stored', he: 'מאוחסן' },
