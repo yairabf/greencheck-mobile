@@ -33,6 +33,7 @@ export function TeamManagementScreen() {
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [section, setSection] = useState<'teammates' | 'equipment'>('teammates');
+  const [equipmentTab, setEquipmentTab] = useState<'stored' | 'in_possession'>('stored');
 
   const teamId = profile?.teamIds?.[0] ?? null;
   const isAdmin = !!members.find((m) => m.uid === user?.uid)?.isAdmin;
@@ -221,23 +222,21 @@ export function TeamManagementScreen() {
             <AppButton label={busyCreateEquipment ? t('common.loading') : t('equipment.create')} onPress={() => void onCreateEquipment()} />
           </View>
 
-          <Text style={{ color: colors.text, fontWeight: '700', marginTop: 8 }}>{t('equipment.inPossession')}</Text>
-          {possessedItems.map((it) => (
-            <View key={`p-${it.id}`} style={{ backgroundColor: colors.card, borderRadius: 10, padding: 10, gap: 4 }}>
-              <Text style={{ color: colors.text, fontWeight: '700' }}>{it.name}</Text>
-              <Text style={{ color: colors.muted }}>{it.serialNumber}</Text>
-              <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
-                <AppButton label={t('equipment.edit')} variant="secondary" onPress={() => { setEditItemId(it.id); setEditName(it.name); setEditSerial(it.serialNumber); }} />
-                <AppButton label={busyDeleteId === it.id ? t('common.loading') : t('equipment.delete')} variant="danger" onPress={() => void onDeleteItem(it.id)} />
-              </View>
-            </View>
-          ))}
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            <AppButton
+              label={`${t('equipment.tabStored')} (${storedItems.length})`}
+              variant={equipmentTab === 'stored' ? 'primary' : 'secondary'}
+              onPress={() => setEquipmentTab('stored')}
+            />
+            <AppButton
+              label={`${t('equipment.tabInPossession')} (${possessedItems.length})`}
+              variant={equipmentTab === 'in_possession' ? 'primary' : 'secondary'}
+              onPress={() => setEquipmentTab('in_possession')}
+            />
+          </View>
 
-          <Text style={{ color: colors.text, fontWeight: '700', marginTop: 8 }}>{t('equipment.stored')}</Text>
-          {storedItems.map((it) => (
-            <View key={`s-${it.id}`} style={{ backgroundColor: colors.card, borderRadius: 10, padding: 10, gap: 4 }}>
+          {(equipmentTab === 'in_possession' ? possessedItems : storedItems).map((it) => (
+            <View key={`${equipmentTab}-${it.id}`} style={{ backgroundColor: colors.card, borderRadius: 10, padding: 10, gap: 4 }}>
               <Text style={{ color: colors.text, fontWeight: '700' }}>{it.name}</Text>
               <Text style={{ color: colors.muted }}>{it.serialNumber}</Text>
               <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>

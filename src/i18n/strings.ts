@@ -127,6 +127,8 @@ export const strings = {
   'equipment.unassigned': { en: 'Unassigned', he: 'לא משויך' },
   'equipment.inPossession': { en: 'In possession', he: 'ברשות המשתמש' },
   'equipment.stored': { en: 'Stored', he: 'מאוחסן' },
+  'equipment.tabStored': { en: 'Stored', he: 'מאוחסן' },
+  'equipment.tabInPossession': { en: 'In possession', he: 'ברשות' },
   'equipment.noItems': { en: 'No equipment yet', he: 'אין ציוד עדיין' },
   'equipment.created': { en: 'Equipment created.', he: 'פריט ציוד נוצר.' },
   'equipment.updated': { en: 'Equipment updated.', he: 'פריט ציוד עודכן.' },
