@@ -10,8 +10,7 @@ import { useAuth } from '../services/AuthProvider';
 import { createTeamInvite } from '../services/invite';
 import { useProfile } from '../services/ProfileProvider';
 import { getTeamMembers, setMyTeamActiveState, type TeamMember } from '../services/teamMembers';
-import { leaveTeam, removeTeamMember } from '../services/teamAdmin';
-import { useT } from '../i18n';
+import { leaveTeam } from '../services/teamAdmin';import { useT } from '../i18n';
 
 export function TeamScreen() {
   const navigation = useNavigation<any>();
@@ -26,7 +25,6 @@ export function TeamScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busyAvailability, setBusyAvailability] = useState(false);
   const [busyLeave, setBusyLeave] = useState(false);
-  const [busyRemoveUid, setBusyRemoveUid] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function onGenerateInvite() {
@@ -66,25 +64,6 @@ export function TeamScreen() {
       setError(e instanceof Error ? e.message : t('common.failedAction'));
     } finally {
       setBusyLeave(false);
-    }
-  }
-
-  async function onRemoveMember(targetUid: string) {
-    if (!user || !profile?.teamIds?.length) return;
-    setBusyRemoveUid(targetUid);
-    setError(null);
-    setMsg(null);
-    try {
-      await removeTeamMember(profile.teamIds[0], user.uid, targetUid);
-      setMsg(t('team.removedMember'));
-      await loadMembers();
-    } catch (e: any) {
-      const raw = String(e?.message || '');
-      if (raw.includes('Only team creator')) setError(t('team.onlyCreatorCanRemove'));
-      else if (raw.includes('Cannot remove team creator')) setError(t('team.cannotRemoveCreator'));
-      else setError(e instanceof Error ? e.message : t('common.failedAction'));
-    } finally {
-      setBusyRemoveUid(null);
     }
   }
 
@@ -141,24 +120,6 @@ export function TeamScreen() {
 
       {!loadingMembers && members.length === 0 ? (
         <Text style={{ color: colors.muted }}>{t('team.yourTeam')}</Text>
-      ) : null}
-
-      {(members.find((x) => x.uid === user?.uid)?.isCreator && members.length > 1) ? (
-        <View style={{ gap: 8, marginTop: 4 }}>
-          <StatusCard
-            title={t('team.adminTools')}
-            subtitle={t('team.manageMembers')}
-          />
-          <Text style={{ color: colors.muted, fontSize: 13 }}>{t('team.selectMemberToRemove')}</Text>
-          {members.filter((m) => m.uid !== user?.uid).map((m) => (
-            <AppButton
-              key={`rm-${m.uid}`}
-              label={busyRemoveUid === m.uid ? t('common.loading') : `${t('team.removeMember')}: ${m.name}`}
-              variant="danger"
-              onPress={() => void onRemoveMember(m.uid)}
-            />
-          ))}
-        </View>
       ) : null}
 
       <View style={{ gap: 10 }}>

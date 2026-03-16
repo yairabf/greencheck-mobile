@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
+import { useEffect, useState } from 'react';
 import { HomeScreen } from '../screens/HomeScreen';
 import { IncidentScreen } from '../screens/IncidentScreen';
 import { TeamScreen } from '../screens/TeamScreen';
@@ -9,8 +10,12 @@ import { JoinTeamScreen } from '../screens/JoinTeamScreen';
 import { IncidentHistoryScreen } from '../screens/IncidentHistoryScreen';
 import { MetricsScreen } from '../screens/MetricsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { TeamManagementScreen } from '../screens/TeamManagementScreen';
 import { colors } from '../config/theme';
 import { useT } from '../i18n';
+import { useAuth } from '../services/AuthProvider';
+import { useProfile } from '../services/ProfileProvider';
+import { getTeamMembers } from '../services/teamMembers';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -101,6 +106,26 @@ function HistoryTabStack() {
 
 export function AppTabs() {
   const t = useT();
+  const { user } = useAuth();
+  const { profile } = useProfile();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      const teamId = profile?.teamIds?.[0];
+      if (!teamId || !user) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const { members } = await getTeamMembers(teamId);
+        const me = members.find((m) => m.uid === user.uid);
+        setIsAdmin(!!me?.isCreator);
+      } catch {
+        setIsAdmin(false);
+      }
+    })();
+  }, [profile?.teamIds, user?.uid]);
 
   return (
     <Tab.Navigator
@@ -148,6 +173,16 @@ export function AppTabs() {
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>🕒</Text>,
         }}
       />
+      {isAdmin ? (
+        <Tab.Screen
+          name="TeamManagement"
+          component={TeamManagementScreen}
+          options={{
+            tabBarLabel: t('nav.teamManagement'),
+            tabBarIcon: () => <Text style={{ fontSize: 22 }}>🛠️</Text>,
+          }}
+        />
+      ) : null}
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

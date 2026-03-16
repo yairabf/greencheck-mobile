@@ -15,6 +15,7 @@ export const strings = {
   'nav.team': { en: 'Team', he: 'צוות' },
   'nav.history': { en: 'History', he: 'היסטוריה' },
   'nav.profile': { en: 'Profile', he: 'פרופיל' },
+  'nav.teamManagement': { en: 'Team Mgmt', he: 'ניהול צוות' },
 
   // Home screen
   'home.dashboard': { en: 'Team Dashboard', he: 'לוח בקרה' },
