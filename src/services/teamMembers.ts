@@ -61,15 +61,34 @@ export async function getTeamMembers(teamId: string) {
 
   const profileMap: Record<string, UserProfile> = {};
   const uidChunks = chunk(team.memberIds, 10);
-  await Promise.all(
-    uidChunks.map(async (ids) => {
-      if (!ids.length) return;
-      const snap = await getDocs(query(collection(firestore, 'users'), where(documentId(), 'in', ids)));
-      snap.forEach((d) => {
-        profileMap[d.id] = toProfile(d.id, d.data() as Record<string, unknown>);
-      });
-    }),
-  );
+
+  // Fast path: batched reads.
+  // If any permission mismatch exists for one user doc, Firestore can fail the whole batch.
+  // We gracefully fall back to per-user reads so Team screen still loads.
+  try {
+    await Promise.all(
+      uidChunks.map(async (ids) => {
+        if (!ids.length) return;
+        const snap = await getDocs(query(collection(firestore, 'users'), where(documentId(), 'in', ids)));
+        snap.forEach((d) => {
+          profileMap[d.id] = toProfile(d.id, d.data() as Record<string, unknown>);
+        });
+      }),
+    );
+  } catch {
+    await Promise.all(
+      team.memberIds.map(async (uid) => {
+        try {
+          const s = await getDoc(doc(firestore, 'users', uid));
+          if (s.exists()) {
+            profileMap[uid] = toProfile(uid, s.data() as Record<string, unknown>);
+          }
+        } catch {
+          // ignore inaccessible legacy/mismatched profile docs and keep fallback display row
+        }
+      }),
+    );
+  }
 
   const memberProfiles: TeamMember[] = team.memberIds.map((uid) => {
     const p = profileMap[uid];
