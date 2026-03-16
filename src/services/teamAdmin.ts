@@ -1,5 +1,6 @@
 import { arrayRemove, doc, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { getFirebaseServices } from './firebase';
+import { ensureTeamAdminIdsPersisted } from './teamPermissions';
 
 function teamRef(teamId: string) {
   const { firestore } = getFirebaseServices();
@@ -12,6 +13,7 @@ function userRef(uid: string) {
 }
 
 export async function leaveTeam(teamId: string, uid: string): Promise<void> {
+  await ensureTeamAdminIdsPersisted(teamId);
   const { firestore } = getFirebaseServices();
   await runTransaction(firestore, async (tx) => {
     const tRef = teamRef(teamId);
@@ -46,6 +48,7 @@ export async function leaveTeam(teamId: string, uid: string): Promise<void> {
 export async function removeTeamMember(teamId: string, actorUid: string, targetUid: string): Promise<void> {
   if (actorUid === targetUid) throw new Error('Use leave team for self removal.');
 
+  await ensureTeamAdminIdsPersisted(teamId);
   const { firestore } = getFirebaseServices();
   await runTransaction(firestore, async (tx) => {
     const tRef = teamRef(teamId);
@@ -82,6 +85,7 @@ export async function removeTeamMember(teamId: string, actorUid: string, targetU
 }
 
 export async function assignTeamAdmin(teamId: string, actorUid: string, targetUid: string): Promise<void> {
+  await ensureTeamAdminIdsPersisted(teamId);
   const { firestore } = getFirebaseServices();
   await runTransaction(firestore, async (tx) => {
     const tRef = teamRef(teamId);
@@ -104,6 +108,7 @@ export async function assignTeamAdmin(teamId: string, actorUid: string, targetUi
 }
 
 export async function revokeTeamAdmin(teamId: string, actorUid: string, targetUid: string): Promise<void> {
+  await ensureTeamAdminIdsPersisted(teamId);
   const { firestore } = getFirebaseServices();
   await runTransaction(firestore, async (tx) => {
     const tRef = teamRef(teamId);

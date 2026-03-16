@@ -1,5 +1,6 @@
 import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { getFirebaseServices } from './firebase';
+import { ensureTeamAdminIdsPersisted, getTeamAdminState, isTeamAdmin } from './teamPermissions';
 
 export type EquipmentStatus = 'in_possession' | 'stored';
 
@@ -53,15 +54,9 @@ export async function listEquipment(teamId: string): Promise<EquipmentItem[]> {
 export async function createEquipment(teamId: string, actorUid: string, name: string, serialNumber: string): Promise<string> {
   const itemRef = doc(equipmentCol(teamId));
 
-  const tSnap = await getDoc(teamRef(teamId));
-  if (!tSnap.exists()) throw new Error('Team not found');
-
-  const teamData = tSnap.data() as Record<string, unknown>;
-  const createdBy = String(teamData.createdBy ?? '');
-  const rawAdminIds = Array.isArray(teamData.adminIds) ? (teamData.adminIds as string[]) : [];
-  const adminIds = Array.from(new Set([createdBy, ...rawAdminIds]));
-
-  if (!adminIds.includes(actorUid)) throw new Error('Only team admin can create equipment');
+  await ensureTeamAdminIdsPersisted(teamId);
+  const teamState = await getTeamAdminState(teamId);
+  if (!teamState.adminIds.includes(actorUid)) throw new Error('Only team admin can create equipment');
 
   // enforce unique serial per team
   const existing = await getDocs(query(equipmentCol(teamId)));
@@ -87,22 +82,17 @@ export async function createEquipment(teamId: string, actorUid: string, name: st
 }
 
 export async function assignEquipment(teamId: string, equipmentId: string, actorUid: string, assignedToUid: string | null): Promise<void> {
-  const { firestore } = getFirebaseServices();
-  await runTransaction(firestore, async (tx) => {
-    const tSnap = await tx.get(teamRef(teamId));
-    if (!tSnap.exists()) throw new Error('Team not found');
-    const createdBy = String(tSnap.data().createdBy ?? '');
-    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
-    if (!adminIds.includes(actorUid)) throw new Error('Only team admin can assign equipment');
+  await ensureTeamAdminIdsPersisted(teamId);
+  const admin = await isTeamAdmin(teamId, actorUid);
+  if (!admin) throw new Error('Only team admin can assign equipment');
 
-    const memberIds = Array.isArray(tSnap.data().memberIds) ? tSnap.data().memberIds : [];
-    if (assignedToUid && !memberIds.includes(assignedToUid)) throw new Error('Assignee must be a team member');
+  const teamState = await getTeamAdminState(teamId);
+  if (assignedToUid && !teamState.memberIds.includes(assignedToUid)) throw new Error('Assignee must be a team member');
 
-    tx.update(equipmentRef(teamId, equipmentId), {
-      assignedToUid: assignedToUid ?? null,
-      updatedBy: actorUid,
-      updatedAt: serverTimestamp(),
-    });
+  await updateDoc(equipmentRef(teamId, equipmentId), {
+    assignedToUid: assignedToUid ?? null,
+    updatedBy: actorUid,
+    updatedAt: serverTimestamp(),
   });
 }
 
@@ -114,12 +104,10 @@ export async function updateEquipmentStatus(teamId: string, equipmentId: string,
   const row = snap.data() as Record<string, unknown>;
   const assignedToUid = row.assignedToUid ? String(row.assignedToUid) : null;
 
-  const tSnap = await getDoc(teamRef(teamId));
-  if (!tSnap.exists()) throw new Error('Team not found');
-  const createdBy = String(tSnap.data().createdBy ?? '');
-  const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
+  await ensureTeamAdminIdsPersisted(teamId);
+  const admin = await isTeamAdmin(teamId, actorUid);
 
-  if (!(assignedToUid === actorUid || adminIds.includes(actorUid))) {
+  if (!(assignedToUid === actorUid || admin)) {
     throw new Error('Only assignee or admin can update status');
   }
 
