@@ -44,7 +44,10 @@ export function EquipmentScreen() {
       await reload();
       setMsg(t('equipment.updated'));
     } catch (e: any) {
-      setMsg(e?.message || t('common.failedAction'));
+      const raw = String(e?.message || '');
+      if (raw.includes('Only assignee or admin')) setMsg(t('equipment.onlyAssigneeOrAdmin'));
+      else if (raw.includes('Equipment not found')) setMsg(t('equipment.notFound'));
+      else setMsg(e?.message || t('common.failedAction'));
     }
   }
 

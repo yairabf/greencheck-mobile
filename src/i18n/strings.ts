@@ -137,6 +137,8 @@ export const strings = {
   'equipment.delete': { en: 'Delete', he: 'מחק' },
   'equipment.saveItem': { en: 'Save item', he: 'שמור פריט' },
   'equipment.onlyAdmin': { en: 'Only team admin can manage equipment.', he: 'רק מנהל צוות יכול לנהל ציוד.' },
+  'equipment.onlyAssigneeOrAdmin': { en: 'Only assigned user or admin can update item status.', he: 'רק המשתמש המשויך או מנהל יכולים לעדכן סטטוס פריט.' },
+  'equipment.notFound': { en: 'Equipment item not found.', he: 'פריט הציוד לא נמצא.' },
 
   // Create team screen
   'createTeam.title': { en: 'Create Team', he: 'צור צוות' },
