@@ -1,4 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
+import { Platform } from 'react-native';
 import { useEffect } from 'react';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { getMissingEnvKeys } from './src/config/validateEnv';
@@ -10,6 +11,12 @@ import { I18nProvider } from './src/i18n';
 
 export default function App() {
   useEffect(() => {
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      void navigator.serviceWorker.register('/sw.js').catch(() => {
+        // no-op
+      });
+    }
+
     const missing = getMissingEnvKeys();
     if (missing.length > 0) {
       if (__DEV__) {
