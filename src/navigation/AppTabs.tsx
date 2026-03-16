@@ -7,8 +7,6 @@ import { IncidentScreen } from '../screens/IncidentScreen';
 import { TeamScreen } from '../screens/TeamScreen';
 import { CreateTeamScreen } from '../screens/CreateTeamScreen';
 import { JoinTeamScreen } from '../screens/JoinTeamScreen';
-import { IncidentHistoryScreen } from '../screens/IncidentHistoryScreen';
-import { MetricsScreen } from '../screens/MetricsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { TeamManagementScreen } from '../screens/TeamManagementScreen';
 import { colors } from '../config/theme';
@@ -20,7 +18,6 @@ import { getTeamMembers } from '../services/teamMembers';
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const TeamStack = createNativeStackNavigator();
-const HistoryStack = createNativeStackNavigator();
 
 const subPageOptions = {
   headerBackVisible: true,
@@ -83,27 +80,6 @@ function TeamTabStack() {
   );
 }
 
-function HistoryTabStack() {
-  return (
-    <HistoryStack.Navigator
-      screenOptions={{
-        headerTintColor: colors.text,
-        headerStyle: { backgroundColor: colors.bg },
-      }}
-    >
-      <HistoryStack.Screen name="IncidentHistory" component={IncidentHistoryScreen} options={{ title: 'History' }} />
-      <HistoryStack.Screen
-        name="Metrics"
-        component={MetricsScreen}
-        options={{
-          title: 'Metrics',
-          ...subPageOptions,
-        }}
-      />
-    </HistoryStack.Navigator>
-  );
-}
-
 export function AppTabs() {
   const t = useT();
   const { user } = useAuth();
@@ -163,14 +139,6 @@ export function AppTabs() {
         options={{
           tabBarLabel: t('nav.team'),
           tabBarIcon: () => <Text style={{ fontSize: 22 }}>👥</Text>,
-        }}
-      />
-      <Tab.Screen
-        name="History"
-        component={HistoryTabStack}
-        options={{
-          tabBarLabel: t('nav.history'),
-          tabBarIcon: () => <Text style={{ fontSize: 22 }}>🕒</Text>,
         }}
       />
       {isAdmin ? (

@@ -7,7 +7,7 @@ import { IncidentRoster, type RosterMember } from '../components/IncidentRoster'
 import { AppBanner } from '../components/AppBanner';
 import { colors } from '../config/theme';
 import { useAuth } from '../services/AuthProvider';
-import { triggerSafetyCheck, getActiveIncident, getIncidentResponseCounts, submitMyStatus, subscribeIncidentResponses, endSafetyCheck, reconcileActiveIncidentPointer, type IncidentResponseMap, type ResponseCounts } from '../services/incident';
+import { triggerSafetyCheck, getActiveIncident, getIncidentResponseCounts, submitMyStatus, subscribeIncidentResponses, endSafetyCheck, reconcileActiveIncidentPointer, getLastIncidentSummary, type LastIncidentSummary, type IncidentResponseMap, type ResponseCounts } from '../services/incident';
 import { getTeamMembers } from '../services/teamMembers';
 import { useProfile } from '../services/ProfileProvider';
 import { consumePendingIntent } from '../services/notificationIntent';
@@ -40,6 +40,7 @@ export function HomeScreen() {
 
   const [incident, setIncident] = useState<Incident | null>(null);
   const [counts, setCounts] = useState<ResponseCounts>({ green: 0, not_green: 0, no_response: 0 });
+  const [lastSummary, setLastSummary] = useState<LastIncidentSummary | null>(null);
   const [busyTrigger, setBusyTrigger] = useState(false);
   const [busyStatus, setBusyStatus] = useState<'green' | 'not_green' | null>(null);
   const [busyEnd, setBusyEnd] = useState(false);
@@ -65,8 +66,12 @@ export function HomeScreen() {
     }
     try {
       await reconcileActiveIncidentPointer(activeTeamId);
-      const i = await getActiveIncident(activeTeamId);
+      const [i, last] = await Promise.all([
+        getActiveIncident(activeTeamId),
+        getLastIncidentSummary(activeTeamId),
+      ]);
       setIncident(i);
+      setLastSummary(last);
       if (i) {
         const nextCounts = await getIncidentResponseCounts(activeTeamId, i.id);
         setCounts(nextCounts);
@@ -344,6 +349,12 @@ export function HomeScreen() {
       <StatusCard
         title={t('home.activeCheck')}
         subtitle={incident ? t('home.activeIncidentAt', { date: formatTsShort(incident.triggeredAt) }) : t('home.noActiveCheck')}
+      />
+      <StatusCard
+        title={t('home.lastEvent')}
+        subtitle={lastSummary
+          ? `${t('home.lastEventAt', { date: formatTsShort(lastSummary.endedAt || lastSummary.triggeredAt) })} • ${lastSummary.autoClosed ? t('home.lastEventClosedAuto') : t('home.lastEventClosedManual')}${lastSummary.allSafe ? ` • ${t('home.lastEventAllSafe')}` : ''}`
+          : t('home.lastEventNone')}
       />
       <StatusCard
         title={t('home.teammates')}

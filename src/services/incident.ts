@@ -16,6 +16,15 @@ import { logEvent } from './observability';
 import { getActiveTeamMemberIds } from './teamMembers';
 import type { Incident } from '../types/incident';
 
+export type LastIncidentSummary = {
+  incidentId: string;
+  triggeredBy: string;
+  triggeredAt?: unknown;
+  endedBy: string;
+  endedAt?: unknown;
+  autoClosed: boolean;
+  allSafe: boolean;
+};
 
 export type ResponseCounts = {
   green: number;
@@ -121,6 +130,22 @@ export async function getActiveIncident(teamId: string): Promise<Incident | null
   const iSnap = await getDoc(incidentRef(teamId, activeIncidentId));
   if (!iSnap.exists()) return null;
   return fromIncident(teamId, iSnap.id, iSnap.data());
+}
+
+export async function getLastIncidentSummary(teamId: string): Promise<LastIncidentSummary | null> {
+  const tSnap = await getDoc(teamRef(teamId));
+  if (!tSnap.exists()) return null;
+  const s = (tSnap.data() as DocumentData).lastIncidentSummary;
+  if (!s || typeof s !== 'object') return null;
+  return {
+    incidentId: String(s.incidentId ?? ''),
+    triggeredBy: String(s.triggeredBy ?? ''),
+    triggeredAt: s.triggeredAt,
+    endedBy: String(s.endedBy ?? ''),
+    endedAt: s.endedAt,
+    autoClosed: Boolean(s.autoClosed),
+    allSafe: Boolean(s.allSafe),
+  };
 }
 
 
@@ -255,6 +280,15 @@ export async function autoCloseIfComplete(teamId: string, incidentId: string): P
 
     tx.update(tRef, {
       activeIncidentId: null,
+      lastIncidentSummary: {
+        incidentId,
+        triggeredBy: String(iData.triggeredBy ?? 'unknown'),
+        triggeredAt: iData.triggeredAt ?? null,
+        endedBy: 'system:auto',
+        endedAt: serverTimestamp(),
+        autoClosed: true,
+        allSafe: !hasNotGreen,
+      },
       updatedAt: serverTimestamp(),
     });
 
@@ -303,6 +337,15 @@ export async function endSafetyCheck(
 
     tx.update(tRef, {
       activeIncidentId: null,
+      lastIncidentSummary: {
+        incidentId,
+        triggeredBy: String(iData.triggeredBy ?? 'unknown'),
+        triggeredAt: iData.triggeredAt ?? null,
+        endedBy: endedByUid,
+        endedAt: serverTimestamp(),
+        autoClosed: false,
+        allSafe: false,
+      },
       updatedAt: serverTimestamp(),
     });
 
