@@ -47,9 +47,10 @@ export async function getTeamMembers(teamId: string) {
   if (!teamSnap.exists()) return { team: null, members: [] as TeamMember[] };
 
   const team = toTeam(teamSnap.id, teamSnap.data() as Record<string, unknown>);
-  const adminIds: string[] = Array.isArray((teamSnap.data() as any).adminIds)
+  const rawAdminIds: string[] = Array.isArray((teamSnap.data() as any).adminIds)
     ? ((teamSnap.data() as any).adminIds as string[])
-    : [team.createdBy];
+    : [];
+  const adminIds: string[] = Array.from(new Set([team.createdBy, ...rawAdminIds]));
 
   const memberSettingsSnap = await getDocs(collection(firestore, 'teams', teamId, 'members'));
   const activeMap: Record<string, boolean> = {};

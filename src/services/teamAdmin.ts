@@ -1,4 +1,4 @@
-import { arrayRemove, arrayUnion, doc, getDoc, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { arrayRemove, doc, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { getFirebaseServices } from './firebase';
 
 function teamRef(teamId: string) {
@@ -23,7 +23,8 @@ export async function leaveTeam(teamId: string, uid: string): Promise<void> {
 
     const memberIds = Array.isArray(tSnap.data().memberIds) ? tSnap.data().memberIds : [];
     const createdBy = String(tSnap.data().createdBy ?? '');
-    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
+    const rawAdminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [];
+    const adminIds = Array.from(new Set([createdBy, ...rawAdminIds]));
 
     if (!memberIds.includes(uid)) return;
     if (createdBy === uid) throw new Error('Team creator cannot leave. Transfer/remove members first.');
@@ -53,7 +54,8 @@ export async function removeTeamMember(teamId: string, actorUid: string, targetU
 
     const memberIds = Array.isArray(tSnap.data().memberIds) ? tSnap.data().memberIds : [];
     const createdBy = String(tSnap.data().createdBy ?? '');
-    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
+    const rawAdminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [];
+    const adminIds = Array.from(new Set([createdBy, ...rawAdminIds]));
 
     if (!memberIds.includes(actorUid)) throw new Error('Only team members can manage team.');
     if (!adminIds.includes(actorUid)) throw new Error('Only team admin can remove members.');
@@ -88,13 +90,14 @@ export async function assignTeamAdmin(teamId: string, actorUid: string, targetUi
 
     const memberIds = Array.isArray(tSnap.data().memberIds) ? tSnap.data().memberIds : [];
     const createdBy = String(tSnap.data().createdBy ?? '');
-    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
+    const rawAdminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [];
+    const adminIds = Array.from(new Set([createdBy, ...rawAdminIds]));
 
     if (!adminIds.includes(actorUid)) throw new Error('Only team admin can assign admins.');
     if (!memberIds.includes(targetUid)) throw new Error('Target user is not a team member.');
 
     tx.update(tRef, {
-      adminIds: arrayUnion(targetUid),
+      adminIds: Array.from(new Set([...adminIds, targetUid])),
       updatedAt: serverTimestamp(),
     });
   });
@@ -108,15 +111,17 @@ export async function revokeTeamAdmin(teamId: string, actorUid: string, targetUi
     if (!tSnap.exists()) throw new Error('Team not found');
 
     const createdBy = String(tSnap.data().createdBy ?? '');
-    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
+    const rawAdminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [];
+    const adminIds = Array.from(new Set([createdBy, ...rawAdminIds]));
 
     if (!adminIds.includes(actorUid)) throw new Error('Only team admin can revoke admins.');
     if (!adminIds.includes(targetUid)) return;
     if (createdBy === targetUid) throw new Error('Cannot revoke creator admin role.');
     if (adminIds.length <= 1) throw new Error('Cannot remove the last admin.');
 
+    const nextAdmins = adminIds.filter((id) => id !== targetUid);
     tx.update(tRef, {
-      adminIds: arrayRemove(targetUid),
+      adminIds: nextAdmins,
       updatedAt: serverTimestamp(),
     });
   });
