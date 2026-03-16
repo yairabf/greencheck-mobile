@@ -106,9 +106,26 @@ export function TeamScreen() {
       {msg ? <Text style={{ color: colors.muted }}>{msg}</Text> : null}
 
       <View style={{ gap: 10 }}>
-        {members.map((m) => (
+        <Text style={{ color: colors.text, fontWeight: '700' }}>{t('team.activeTeammates')} ({members.filter((m) => m.active).length})</Text>
+        {members.filter((m) => m.active).length === 0 ? (
+          <Text style={{ color: colors.muted }}>{t('team.noActiveTeammates')}</Text>
+        ) : members.filter((m) => m.active).map((m) => (
           <MemberRow
-            key={m.uid}
+            key={`active-${m.uid}`}
+            name={m.name}
+            phone={m.phone}
+            isCreator={m.isCreator}
+            isYou={m.uid === user?.uid}
+            active={m.active}
+          />
+        ))}
+
+        <Text style={{ color: colors.text, fontWeight: '700', marginTop: 8 }}>{t('team.inactiveTeammates')} ({members.filter((m) => !m.active).length})</Text>
+        {members.filter((m) => !m.active).length === 0 ? (
+          <Text style={{ color: colors.muted }}>{t('team.noInactiveTeammates')}</Text>
+        ) : members.filter((m) => !m.active).map((m) => (
+          <MemberRow
+            key={`inactive-${m.uid}`}
             name={m.name}
             phone={m.phone}
             isCreator={m.isCreator}
