@@ -25,6 +25,7 @@ export function TeamScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busyAvailability, setBusyAvailability] = useState(false);
   const [busyLeave, setBusyLeave] = useState(false);
+  const [membersView, setMembersView] = useState<'active' | 'inactive'>('active');
   const [msg, setMsg] = useState<string | null>(null);
 
   async function onGenerateInvite() {
@@ -106,33 +107,46 @@ export function TeamScreen() {
       {msg ? <Text style={{ color: colors.muted }}>{msg}</Text> : null}
 
       <View style={{ gap: 10 }}>
-        <Text style={{ color: colors.text, fontWeight: '700' }}>{t('team.activeTeammates')} ({members.filter((m) => m.active).length})</Text>
-        {members.filter((m) => m.active).length === 0 ? (
-          <Text style={{ color: colors.muted }}>{t('team.noActiveTeammates')}</Text>
-        ) : members.filter((m) => m.active).map((m) => (
-          <MemberRow
-            key={`active-${m.uid}`}
-            name={m.name}
-            phone={m.phone}
-            isCreator={m.isCreator}
-            isYou={m.uid === user?.uid}
-            active={m.active}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <AppButton
+            label={`${t('team.filterActive')} (${members.filter((m) => m.active).length})`}
+            variant={membersView === 'active' ? 'primary' : 'secondary'}
+            onPress={() => setMembersView('active')}
           />
-        ))}
+          <AppButton
+            label={`${t('team.filterInactive')} (${members.filter((m) => !m.active).length})`}
+            variant={membersView === 'inactive' ? 'primary' : 'secondary'}
+            onPress={() => setMembersView('inactive')}
+          />
+        </View>
 
-        <Text style={{ color: colors.text, fontWeight: '700', marginTop: 8 }}>{t('team.inactiveTeammates')} ({members.filter((m) => !m.active).length})</Text>
-        {members.filter((m) => !m.active).length === 0 ? (
-          <Text style={{ color: colors.muted }}>{t('team.noInactiveTeammates')}</Text>
-        ) : members.filter((m) => !m.active).map((m) => (
-          <MemberRow
-            key={`inactive-${m.uid}`}
-            name={m.name}
-            phone={m.phone}
-            isCreator={m.isCreator}
-            isYou={m.uid === user?.uid}
-            active={m.active}
-          />
-        ))}
+        {membersView === 'active' ? (
+          members.filter((m) => m.active).length === 0 ? (
+            <Text style={{ color: colors.muted }}>{t('team.noActiveTeammates')}</Text>
+          ) : members.filter((m) => m.active).map((m) => (
+            <MemberRow
+              key={`active-${m.uid}`}
+              name={m.name}
+              phone={m.phone}
+              isCreator={m.isCreator}
+              isYou={m.uid === user?.uid}
+              active={m.active}
+            />
+          ))
+        ) : (
+          members.filter((m) => !m.active).length === 0 ? (
+            <Text style={{ color: colors.muted }}>{t('team.noInactiveTeammates')}</Text>
+          ) : members.filter((m) => !m.active).map((m) => (
+            <MemberRow
+              key={`inactive-${m.uid}`}
+              name={m.name}
+              phone={m.phone}
+              isCreator={m.isCreator}
+              isYou={m.uid === user?.uid}
+              active={m.active}
+            />
+          ))
+        )}
       </View>
 
       {!loadingMembers && members.length === 0 ? (

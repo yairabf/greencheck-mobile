@@ -85,6 +85,8 @@ export const strings = {
   'team.inactiveTeammates': { en: 'Inactive teammates', he: 'חברי צוות לא פעילים' },
   'team.noActiveTeammates': { en: 'No active teammates', he: 'אין חברי צוות פעילים' },
   'team.noInactiveTeammates': { en: 'No inactive teammates', he: 'אין חברי צוות לא פעילים' },
+  'team.filterActive': { en: 'Active', he: 'פעילים' },
+  'team.filterInactive': { en: 'Inactive', he: 'לא פעילים' },
   'team.leaveTeamAction': { en: 'Leave team', he: 'עזוב צוות' },
   'team.removeMember': { en: 'Remove member', he: 'הסר חבר צוות' },
   'team.adminTools': { en: 'Admin tools', he: 'כלי ניהול' },
