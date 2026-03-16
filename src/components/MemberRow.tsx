@@ -6,11 +6,12 @@ type Props = {
   name: string;
   phone: string;
   isCreator?: boolean;
+  isAdmin?: boolean;
   isYou?: boolean;
   active?: boolean;
 };
 
-export function MemberRow({ name, phone, isCreator, isYou, active = true }: Props) {
+export function MemberRow({ name, phone, isCreator, isAdmin, isYou, active = true }: Props) {
   const t = useT();
 
   return (
@@ -22,6 +23,7 @@ export function MemberRow({ name, phone, isCreator, isYou, active = true }: Prop
         <Text style={styles.phone}>{phone || t('team.noPhone')}</Text>
       </View>
       <Text style={[styles.badge, active ? styles.activeBadge : styles.inactiveBadge]}>{active ? t('team.statusActive') : t('team.statusInactive')}</Text>
+      {isAdmin ? <Text style={styles.badge}>{t('team.adminBadge')}</Text> : null}
       {isCreator ? <Text style={styles.badge}>{t('team.creator')}</Text> : null}
     </View>
   );

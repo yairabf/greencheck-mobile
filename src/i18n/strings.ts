@@ -81,6 +81,7 @@ export const strings = {
   'team.statusInactive': { en: 'Inactive', he: 'לא פעיל' },
   'team.creator': { en: 'Creator', he: 'יוצר' },
   'team.noPhone': { en: 'No phone', he: 'אין טלפון' },
+  'team.unnamed': { en: 'Unnamed', he: 'ללא שם' },
   'team.activeTeammates': { en: 'Active teammates', he: 'חברי צוות פעילים' },
   'team.inactiveTeammates': { en: 'Inactive teammates', he: 'חברי צוות לא פעילים' },
   'team.noActiveTeammates': { en: 'No active teammates', he: 'אין חברי צוות פעילים' },
@@ -96,6 +97,13 @@ export const strings = {
   'team.leftTeam': { en: 'You left the team.', he: 'עזבת את הצוות.' },
   'team.cannotRemoveCreator': { en: 'Cannot remove team creator.', he: 'לא ניתן להסיר את יוצר הצוות.' },
   'team.onlyCreatorCanRemove': { en: 'Only team creator can remove members.', he: 'רק יוצר הצוות יכול להסיר חברים.' },
+  'team.onlyAdminCanManage': { en: 'Only team admin can manage members.', he: 'רק מנהל צוות יכול לנהל חברים.' },
+  'team.assignAdmin': { en: 'Make admin', he: 'הפוך למנהל' },
+  'team.revokeAdmin': { en: 'Remove admin', he: 'הסר מנהל' },
+  'team.adminAssigned': { en: 'Admin assigned.', he: 'מנהל הוגדר.' },
+  'team.adminRevoked': { en: 'Admin removed.', he: 'הרשאת מנהל הוסרה.' },
+  'team.cannotRemoveLastAdmin': { en: 'Cannot remove the last admin.', he: 'לא ניתן להסיר את המנהל האחרון.' },
+  'team.adminBadge': { en: 'Admin', he: 'מנהל' },
 
   // Create team screen
   'createTeam.title': { en: 'Create Team', he: 'צור צוות' },

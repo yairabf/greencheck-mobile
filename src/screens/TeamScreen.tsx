@@ -129,6 +129,7 @@ export function TeamScreen() {
               name={m.name}
               phone={m.phone}
               isCreator={m.isCreator}
+              isAdmin={m.isAdmin}
               isYou={m.uid === user?.uid}
               active={m.active}
             />
@@ -142,6 +143,7 @@ export function TeamScreen() {
               name={m.name}
               phone={m.phone}
               isCreator={m.isCreator}
+              isAdmin={m.isAdmin}
               isYou={m.uid === user?.uid}
               active={m.active}
             />

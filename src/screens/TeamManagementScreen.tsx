@@ -7,7 +7,7 @@ import { colors } from '../config/theme';
 import { useAuth } from '../services/AuthProvider';
 import { useProfile } from '../services/ProfileProvider';
 import { getTeamMembers, type TeamMember } from '../services/teamMembers';
-import { removeTeamMember } from '../services/teamAdmin';
+import { assignTeamAdmin, removeTeamMember, revokeTeamAdmin } from '../services/teamAdmin';
 import { useT } from '../i18n';
 
 export function TeamManagementScreen() {
@@ -18,10 +18,12 @@ export function TeamManagementScreen() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyRemoveUid, setBusyRemoveUid] = useState<string | null>(null);
+  const [busyAdminUid, setBusyAdminUid] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   const teamId = profile?.teamIds?.[0] ?? null;
+  const isAdmin = !!members.find((m) => m.uid === user?.uid)?.isAdmin;
   const isCreator = !!members.find((m) => m.uid === user?.uid)?.isCreator;
 
   async function loadMembers() {
@@ -38,6 +40,30 @@ export function TeamManagementScreen() {
     }
   }
 
+  async function onToggleAdmin(uid: string, makeAdmin: boolean) {
+    if (!teamId || !user) return;
+    setBusyAdminUid(uid);
+    setError(null);
+    setMsg(null);
+    try {
+      if (makeAdmin) {
+        await assignTeamAdmin(teamId, user.uid, uid);
+        setMsg(t('team.adminAssigned'));
+      } else {
+        await revokeTeamAdmin(teamId, user.uid, uid);
+        setMsg(t('team.adminRevoked'));
+      }
+      await loadMembers();
+    } catch (e: any) {
+      const raw = String(e?.message || '');
+      if (raw.includes('Only team admin')) setError(t('team.onlyAdminCanManage'));
+      else if (raw.includes('last admin')) setError(t('team.cannotRemoveLastAdmin'));
+      else setError(e instanceof Error ? e.message : t('common.failedAction'));
+    } finally {
+      setBusyAdminUid(null);
+    }
+  }
+
   async function onRemove(uid: string) {
     if (!teamId || !user) return;
     setBusyRemoveUid(uid);
@@ -49,8 +75,9 @@ export function TeamManagementScreen() {
       await loadMembers();
     } catch (e: any) {
       const raw = String(e?.message || '');
-      if (raw.includes('Only team creator')) setError(t('team.onlyCreatorCanRemove'));
+      if (raw.includes('Only team admin')) setError(t('team.onlyAdminCanManage'));
       else if (raw.includes('Cannot remove team creator')) setError(t('team.cannotRemoveCreator'));
+      else if (raw.includes('last admin')) setError(t('team.cannotRemoveLastAdmin'));
       else setError(e instanceof Error ? e.message : t('common.failedAction'));
     } finally {
       setBusyRemoveUid(null);
@@ -74,7 +101,7 @@ export function TeamManagementScreen() {
     <AppContainer>
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('team.adminTools')}</Text>
       <StatusCard title={t('team.manageMembers')} subtitle={t('team.selectMemberToRemove')} />
-      {!isCreator ? <Text style={{ color: colors.danger }}>{t('team.onlyCreatorCanRemove')}</Text> : null}
+      {!isAdmin ? <Text style={{ color: colors.danger }}>{t('team.onlyAdminCanManage')}</Text> : null}
       {loading ? <ActivityIndicator color={colors.primary} /> : null}
       {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
       {msg ? <Text style={{ color: colors.muted }}>{msg}</Text> : null}
@@ -83,15 +110,24 @@ export function TeamManagementScreen() {
         {members.map((m) => (
           <View key={m.uid} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontWeight: '700' }}>{m.name || 'Unnamed'}</Text>
+              <Text style={{ color: colors.text, fontWeight: '700' }}>
+                {m.name || t('team.unnamed')} {m.isAdmin ? `(${t('team.adminBadge')})` : ''}
+              </Text>
               <Text style={{ color: colors.muted, fontSize: 12 }}>{m.phone || t('team.noPhone')}</Text>
             </View>
-            {isCreator && m.uid !== user?.uid ? (
-              <AppButton
-                label={busyRemoveUid === m.uid ? t('common.loading') : '🗑️'}
-                variant="danger"
-                onPress={() => void onRemove(m.uid)}
-              />
+            {isAdmin && m.uid !== user?.uid ? (
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <AppButton
+                  label={busyAdminUid === m.uid ? t('common.loading') : (m.isAdmin ? t('team.revokeAdmin') : t('team.assignAdmin'))}
+                  variant="secondary"
+                  onPress={() => void onToggleAdmin(m.uid, !m.isAdmin)}
+                />
+                <AppButton
+                  label={busyRemoveUid === m.uid ? t('common.loading') : '🗑️'}
+                  variant="danger"
+                  onPress={() => void onRemove(m.uid)}
+                />
+              </View>
             ) : null}
           </View>
         ))}

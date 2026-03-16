@@ -120,7 +120,7 @@ export function AppTabs() {
       try {
         const { members } = await getTeamMembers(teamId);
         const me = members.find((m) => m.uid === user.uid);
-        setIsAdmin(!!me?.isCreator);
+        setIsAdmin(!!me?.isAdmin);
       } catch {
         setIsAdmin(false);
       }

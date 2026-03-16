@@ -52,6 +52,7 @@ export async function createTeamForUser(uid: string, teamName: string): Promise<
     tx.set(newRef, {
       name: teamName.trim(),
       createdBy: uid,
+      adminIds: [uid],
       memberIds: [uid],
       activeIncidentId: null,
       createdAt: serverTimestamp(),

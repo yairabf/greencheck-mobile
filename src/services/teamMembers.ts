@@ -8,6 +8,7 @@ export type TeamMember = {
   name: string;
   phone: string;
   isCreator: boolean;
+  isAdmin: boolean;
   active: boolean;
 };
 
@@ -46,6 +47,9 @@ export async function getTeamMembers(teamId: string) {
   if (!teamSnap.exists()) return { team: null, members: [] as TeamMember[] };
 
   const team = toTeam(teamSnap.id, teamSnap.data() as Record<string, unknown>);
+  const adminIds: string[] = Array.isArray((teamSnap.data() as any).adminIds)
+    ? ((teamSnap.data() as any).adminIds as string[])
+    : [team.createdBy];
 
   const memberSettingsSnap = await getDocs(collection(firestore, 'teams', teamId, 'members'));
   const activeMap: Record<string, boolean> = {};
@@ -69,13 +73,14 @@ export async function getTeamMembers(teamId: string) {
   const memberProfiles: TeamMember[] = team.memberIds.map((uid) => {
     const p = profileMap[uid];
     if (!p) {
-      return { uid, name: 'Unknown member', phone: '', isCreator: uid === team.createdBy, active: activeMap[uid] ?? true };
+      return { uid, name: 'Unknown member', phone: '', isCreator: uid === team.createdBy, isAdmin: adminIds.includes(uid), active: activeMap[uid] ?? true };
     }
     return {
       uid,
       name: p.name || 'Unnamed',
       phone: p.phone,
       isCreator: uid === team.createdBy,
+      isAdmin: adminIds.includes(uid),
       active: activeMap[uid] ?? true,
     };
   });

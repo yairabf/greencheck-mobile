@@ -1,4 +1,4 @@
-import { arrayRemove, doc, getDoc, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, doc, getDoc, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { getFirebaseServices } from './firebase';
 
 function teamRef(teamId: string) {
@@ -23,12 +23,15 @@ export async function leaveTeam(teamId: string, uid: string): Promise<void> {
 
     const memberIds = Array.isArray(tSnap.data().memberIds) ? tSnap.data().memberIds : [];
     const createdBy = String(tSnap.data().createdBy ?? '');
+    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
 
     if (!memberIds.includes(uid)) return;
     if (createdBy === uid) throw new Error('Team creator cannot leave. Transfer/remove members first.');
+    if (adminIds.includes(uid) && adminIds.length <= 1) throw new Error('Cannot remove the last admin.');
 
     tx.update(tRef, {
       memberIds: arrayRemove(uid),
+      adminIds: arrayRemove(uid),
       updatedAt: serverTimestamp(),
     });
 
@@ -50,14 +53,17 @@ export async function removeTeamMember(teamId: string, actorUid: string, targetU
 
     const memberIds = Array.isArray(tSnap.data().memberIds) ? tSnap.data().memberIds : [];
     const createdBy = String(tSnap.data().createdBy ?? '');
+    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
 
     if (!memberIds.includes(actorUid)) throw new Error('Only team members can manage team.');
-    if (createdBy !== actorUid) throw new Error('Only team creator can remove members.');
+    if (!adminIds.includes(actorUid)) throw new Error('Only team admin can remove members.');
     if (!memberIds.includes(targetUid)) return;
     if (createdBy === targetUid) throw new Error('Cannot remove team creator.');
+    if (adminIds.includes(targetUid) && adminIds.length <= 1) throw new Error('Cannot remove the last admin.');
 
     tx.update(tRef, {
       memberIds: arrayRemove(targetUid),
+      adminIds: arrayRemove(targetUid),
       updatedAt: serverTimestamp(),
     });
   });
@@ -71,4 +77,47 @@ export async function removeTeamMember(teamId: string, actorUid: string, targetU
   } catch {
     // no-op
   }
+}
+
+export async function assignTeamAdmin(teamId: string, actorUid: string, targetUid: string): Promise<void> {
+  const { firestore } = getFirebaseServices();
+  await runTransaction(firestore, async (tx) => {
+    const tRef = teamRef(teamId);
+    const tSnap = await tx.get(tRef);
+    if (!tSnap.exists()) throw new Error('Team not found');
+
+    const memberIds = Array.isArray(tSnap.data().memberIds) ? tSnap.data().memberIds : [];
+    const createdBy = String(tSnap.data().createdBy ?? '');
+    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
+
+    if (!adminIds.includes(actorUid)) throw new Error('Only team admin can assign admins.');
+    if (!memberIds.includes(targetUid)) throw new Error('Target user is not a team member.');
+
+    tx.update(tRef, {
+      adminIds: arrayUnion(targetUid),
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+
+export async function revokeTeamAdmin(teamId: string, actorUid: string, targetUid: string): Promise<void> {
+  const { firestore } = getFirebaseServices();
+  await runTransaction(firestore, async (tx) => {
+    const tRef = teamRef(teamId);
+    const tSnap = await tx.get(tRef);
+    if (!tSnap.exists()) throw new Error('Team not found');
+
+    const createdBy = String(tSnap.data().createdBy ?? '');
+    const adminIds = Array.isArray(tSnap.data().adminIds) ? tSnap.data().adminIds : [createdBy];
+
+    if (!adminIds.includes(actorUid)) throw new Error('Only team admin can revoke admins.');
+    if (!adminIds.includes(targetUid)) return;
+    if (createdBy === targetUid) throw new Error('Cannot revoke creator admin role.');
+    if (adminIds.length <= 1) throw new Error('Cannot remove the last admin.');
+
+    tx.update(tRef, {
+      adminIds: arrayRemove(targetUid),
+      updatedAt: serverTimestamp(),
+    });
+  });
 }
