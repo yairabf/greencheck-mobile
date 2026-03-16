@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Modal, Text, TextInput, View } from 'react-native';
 import { AppContainer } from '../components/AppContainer';
 import { AppButton } from '../components/AppButton';
 import { StatusCard } from '../components/StatusCard';
@@ -8,6 +8,7 @@ import { useAuth } from '../services/AuthProvider';
 import { useProfile } from '../services/ProfileProvider';
 import { getTeamMembers, type TeamMember } from '../services/teamMembers';
 import { assignTeamAdmin, removeTeamMember, revokeTeamAdmin } from '../services/teamAdmin';
+import { assignEquipment, createEquipment, listEquipment, type EquipmentItem } from '../services/equipment';
 import { useT } from '../i18n';
 
 export function TeamManagementScreen() {
@@ -16,27 +17,70 @@ export function TeamManagementScreen() {
   const t = useT();
 
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [items, setItems] = useState<EquipmentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyRemoveUid, setBusyRemoveUid] = useState<string | null>(null);
   const [busyAdminUid, setBusyAdminUid] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [serial, setSerial] = useState('');
+  const [busyCreateEquipment, setBusyCreateEquipment] = useState(false);
+  const [assignModalItemId, setAssignModalItemId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [section, setSection] = useState<'teammates' | 'equipment'>('teammates');
 
   const teamId = profile?.teamIds?.[0] ?? null;
   const isAdmin = !!members.find((m) => m.uid === user?.uid)?.isAdmin;
-  const isCreator = !!members.find((m) => m.uid === user?.uid)?.isCreator;
 
-  async function loadMembers() {
+  const storedItems = useMemo(() => items.filter((x) => x.status === 'stored'), [items]);
+  const possessedItems = useMemo(() => items.filter((x) => x.status === 'in_possession'), [items]);
+
+  async function loadAll() {
     if (!teamId) return;
     setLoading(true);
     setError(null);
     try {
-      const { members: list } = await getTeamMembers(teamId);
+      const [{ members: list }, equipment] = await Promise.all([
+        getTeamMembers(teamId),
+        listEquipment(teamId),
+      ]);
       setMembers(list);
+      setItems(equipment);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.failedAction'));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onCreateEquipment() {
+    if (!teamId || !user) return;
+    setBusyCreateEquipment(true);
+    setError(null);
+    setMsg(null);
+    try {
+      await createEquipment(teamId, user.uid, name, serial);
+      setName('');
+      setSerial('');
+      setMsg(t('equipment.created'));
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || t('common.failedAction'));
+    } finally {
+      setBusyCreateEquipment(false);
+    }
+  }
+
+  async function onAssign(itemId: string, uid: string | null) {
+    if (!teamId || !user) return;
+    setError(null);
+    setMsg(null);
+    try {
+      await assignEquipment(teamId, itemId, user.uid, uid);
+      setMsg(t('equipment.updated'));
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || t('common.failedAction'));
     }
   }
 
@@ -53,7 +97,7 @@ export function TeamManagementScreen() {
         await revokeTeamAdmin(teamId, user.uid, uid);
         setMsg(t('team.adminRevoked'));
       }
-      await loadMembers();
+      await loadAll();
     } catch (e: any) {
       const raw = String(e?.message || '');
       if (raw.includes('Only team admin')) setError(t('team.onlyAdminCanManage'));
@@ -72,7 +116,7 @@ export function TeamManagementScreen() {
     try {
       await removeTeamMember(teamId, user.uid, uid);
       setMsg(t('team.removedMember'));
-      await loadMembers();
+      await loadAll();
     } catch (e: any) {
       const raw = String(e?.message || '');
       if (raw.includes('Only team admin')) setError(t('team.onlyAdminCanManage'));
@@ -85,7 +129,7 @@ export function TeamManagementScreen() {
   }
 
   useEffect(() => {
-    void loadMembers();
+    void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
@@ -100,40 +144,116 @@ export function TeamManagementScreen() {
   return (
     <AppContainer>
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('team.adminTools')}</Text>
-      <StatusCard title={t('team.manageMembers')} subtitle={t('team.selectMemberToRemove')} />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <AppButton
+          label={t('team.tabTeammates')}
+          variant={section === 'teammates' ? 'primary' : 'secondary'}
+          onPress={() => setSection('teammates')}
+        />
+        <AppButton
+          label={t('team.tabEquipment')}
+          variant={section === 'equipment' ? 'primary' : 'secondary'}
+          onPress={() => setSection('equipment')}
+        />
+      </View>
+
       {!isAdmin ? <Text style={{ color: colors.danger }}>{t('team.onlyAdminCanManage')}</Text> : null}
       {loading ? <ActivityIndicator color={colors.primary} /> : null}
       {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
       {msg ? <Text style={{ color: colors.muted }}>{msg}</Text> : null}
 
-      <View style={{ gap: 10 }}>
-        {members.map((m) => (
-          <View key={m.uid} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontWeight: '700' }}>
-                {m.name || t('team.unnamed')} {m.isAdmin ? `(${t('team.adminBadge')})` : ''}
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>{m.phone || t('team.noPhone')}</Text>
-            </View>
-            {isAdmin && m.uid !== user?.uid ? (
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                <AppButton
-                  label={busyAdminUid === m.uid ? t('common.loading') : (m.isAdmin ? t('team.revokeAdmin') : t('team.assignAdmin'))}
-                  variant="secondary"
-                  onPress={() => void onToggleAdmin(m.uid, !m.isAdmin)}
-                />
-                <AppButton
-                  label={busyRemoveUid === m.uid ? t('common.loading') : '🗑️'}
-                  variant="danger"
-                  onPress={() => void onRemove(m.uid)}
-                />
+      {section === 'teammates' ? (
+        <>
+          <StatusCard title={t('team.manageMembers')} subtitle={t('team.selectMemberToRemove')} />
+          <View style={{ gap: 10 }}>
+            {members.map((m) => (
+              <View key={m.uid} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.text, fontWeight: '700' }}>
+                    {m.name || t('team.unnamed')} {m.isAdmin ? `(${t('team.adminBadge')})` : ''}
+                  </Text>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>{m.phone || t('team.noPhone')}</Text>
+                </View>
+                {isAdmin && m.uid !== user?.uid ? (
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <AppButton
+                      label={busyAdminUid === m.uid ? t('common.loading') : (m.isAdmin ? t('team.revokeAdmin') : t('team.assignAdmin'))}
+                      variant="secondary"
+                      onPress={() => void onToggleAdmin(m.uid, !m.isAdmin)}
+                    />
+                    <AppButton
+                      label={busyRemoveUid === m.uid ? t('common.loading') : '🗑️'}
+                      variant="danger"
+                      onPress={() => void onRemove(m.uid)}
+                    />
+                  </View>
+                ) : null}
               </View>
-            ) : null}
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      ) : (
+        <>
+          <StatusCard title={t('equipment.teamItems')} subtitle={`${items.length}`} />
+          <View style={{ gap: 6 }}>
+            <TextInput style={{ backgroundColor: colors.card, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.name')} placeholderTextColor={colors.muted} value={name} onChangeText={setName} />
+            <TextInput style={{ backgroundColor: colors.card, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.serial')} placeholderTextColor={colors.muted} value={serial} onChangeText={setSerial} />
+            <AppButton label={busyCreateEquipment ? t('common.loading') : t('equipment.create')} onPress={() => void onCreateEquipment()} />
+          </View>
 
-      <AppButton label={t('team.refreshTeam')} variant="secondary" onPress={() => void loadMembers()} />
+          <Text style={{ color: colors.text, fontWeight: '700', marginTop: 8 }}>{t('equipment.inPossession')}</Text>
+          {possessedItems.map((it) => (
+            <View key={`p-${it.id}`} style={{ backgroundColor: colors.card, borderRadius: 10, padding: 10, gap: 4 }}>
+              <Text style={{ color: colors.text, fontWeight: '700' }}>{it.name}</Text>
+              <Text style={{ color: colors.muted }}>{it.serialNumber}</Text>
+              <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>
+              <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
+            </View>
+          ))}
+
+          <Text style={{ color: colors.text, fontWeight: '700', marginTop: 8 }}>{t('equipment.stored')}</Text>
+          {storedItems.map((it) => (
+            <View key={`s-${it.id}`} style={{ backgroundColor: colors.card, borderRadius: 10, padding: 10, gap: 4 }}>
+              <Text style={{ color: colors.text, fontWeight: '700' }}>{it.name}</Text>
+              <Text style={{ color: colors.muted }}>{it.serialNumber}</Text>
+              <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>
+              <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
+            </View>
+          ))}
+
+          <Modal visible={!!assignModalItemId} transparent animationType="fade" onRequestClose={() => setAssignModalItemId(null)}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 16 }}>
+              <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, gap: 8 }}>
+                <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>{t('equipment.chooseAssignee')}</Text>
+                <AppButton
+                  label={t('equipment.unassigned')}
+                  variant="secondary"
+                  onPress={() => {
+                    if (!assignModalItemId) return;
+                    void onAssign(assignModalItemId, null);
+                    setAssignModalItemId(null);
+                  }}
+                />
+                {members.map((m) => (
+                  <AppButton
+                    key={`assignee-${m.uid}`}
+                    label={m.name || t('team.unnamed')}
+                    variant="secondary"
+                    onPress={() => {
+                      if (!assignModalItemId) return;
+                      void onAssign(assignModalItemId, m.uid);
+                      setAssignModalItemId(null);
+                    }}
+                  />
+                ))}
+                <AppButton label={t('equipment.close')} variant="danger" onPress={() => setAssignModalItemId(null)} />
+              </View>
+            </View>
+          </Modal>
+        </>
+      )}
+
+      <AppButton label={t('team.refreshTeam')} variant="secondary" onPress={() => void loadAll()} />
     </AppContainer>
   );
 }

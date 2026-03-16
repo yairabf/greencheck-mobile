@@ -99,6 +99,8 @@ export const strings = {
   'team.removeMember': { en: 'Remove member', he: 'הסר חבר צוות' },
   'team.adminTools': { en: 'Admin tools', he: 'כלי ניהול' },
   'team.manageMembers': { en: 'Manage team members', he: 'ניהול חברי צוות' },
+  'team.tabTeammates': { en: 'Teammates', he: 'חברי צוות' },
+  'team.tabEquipment': { en: 'Equipment', he: 'ציוד' },
   'team.selectMemberToRemove': { en: 'Select a teammate to remove:', he: 'בחר חבר צוות להסרה:' },
   'team.removedMember': { en: 'Member removed.', he: 'חבר הצוות הוסר.' },
   'team.leftTeam': { en: 'You left the team.', he: 'עזבת את הצוות.' },
