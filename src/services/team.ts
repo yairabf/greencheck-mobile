@@ -5,6 +5,7 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
+  setDoc,
   type DocumentData,
 } from 'firebase/firestore';
 import { getFirebaseServices } from './firebase';
@@ -57,11 +58,6 @@ export async function createTeamForUser(uid: string, teamName: string): Promise<
       updatedAt: serverTimestamp(),
     });
 
-    tx.set(doc(firestore, 'teams', newRef.id, 'members', uid), {
-      active: true,
-      updatedAt: serverTimestamp(),
-    }, { merge: true });
-
     const u = userSnap.data();
     const existingTeamIds = Array.isArray(u.teamIds) ? u.teamIds : [];
     if (existingTeamIds.includes(newRef.id)) {
@@ -73,6 +69,16 @@ export async function createTeamForUser(uid: string, teamName: string): Promise<
       updatedAt: serverTimestamp(),
     });
   });
+
+  // Best-effort member settings init (do not fail team creation if this write is denied/transient).
+  try {
+    await setDoc(doc(firestore, 'teams', newRef.id, 'members', uid), {
+      active: true,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch {
+    // no-op
+  }
 
   return newRef.id;
 }

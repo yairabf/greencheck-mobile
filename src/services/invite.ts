@@ -71,16 +71,16 @@ export async function joinTeamWithCode(uid: string, code: string): Promise<strin
   const { firestore } = getFirebaseServices();
   const invRef = inviteRef(code);
 
-  return runTransaction(firestore, async (tx) => {
+  const teamId = await runTransaction(firestore, async (tx) => {
     const invSnap = await tx.get(invRef);
     if (!invSnap.exists()) throw new Error('Invalid invite code.');
     const inv = invSnap.data();
     if (!inv.active) throw new Error('Invite is inactive.');
 
-    const teamId = String(inv.teamId ?? '');
-    if (!teamId) throw new Error('Invite missing team ID.');
+    const nextTeamId = String(inv.teamId ?? '');
+    if (!nextTeamId) throw new Error('Invite missing team ID.');
 
-    const tRef = teamRef(teamId);
+    const tRef = teamRef(nextTeamId);
     const uRef = userRef(uid);
 
     const userSnap = await tx.get(uRef);
@@ -90,28 +90,35 @@ export async function joinTeamWithCode(uid: string, code: string): Promise<strin
       tx.set(uRef, {
         name: '',
         phone: '',
-        teamIds: [teamId],
+        teamIds: [nextTeamId],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
       tx.update(tRef, { memberIds: arrayUnion(uid), updatedAt: serverTimestamp() });
-      tx.set(doc(firestore, 'teams', teamId, 'members', uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
-      return teamId;
+      return nextTeamId;
     }
 
     const userData = userSnap.data();
     const teamIds = Array.isArray(userData.teamIds) ? userData.teamIds : [];
 
-    if (teamIds.includes(teamId)) {
+    if (teamIds.includes(nextTeamId)) {
       // idempotent success
-      return teamId;
+      return nextTeamId;
     }
 
     // Update team membership and user profile atomically.
     // We intentionally do not read team doc here because non-members cannot read it by rules.
     tx.update(tRef, { memberIds: arrayUnion(uid), updatedAt: serverTimestamp() });
-    tx.update(uRef, { teamIds: arrayUnion(teamId), updatedAt: serverTimestamp() });
-    tx.set(doc(firestore, 'teams', teamId, 'members', uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
-    return teamId;
+    tx.update(uRef, { teamIds: arrayUnion(nextTeamId), updatedAt: serverTimestamp() });
+    return nextTeamId;
   });
+
+  // Best-effort member settings init outside transaction (avoid blocking join on permissions race).
+  try {
+    await setDoc(doc(firestore, 'teams', teamId, 'members', uid), { active: true, updatedAt: serverTimestamp() }, { merge: true });
+  } catch {
+    // no-op
+  }
+
+  return teamId;
 }
