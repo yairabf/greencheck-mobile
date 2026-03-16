@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { getFirebaseServices } from './firebase';
 import { ensureTeamAdminIdsPersisted, getTeamAdminState, isTeamAdmin } from './teamPermissions';
 
@@ -116,4 +116,33 @@ export async function updateEquipmentStatus(teamId: string, equipmentId: string,
     updatedBy: actorUid,
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function editEquipment(teamId: string, equipmentId: string, actorUid: string, updates: { name: string; serialNumber: string }): Promise<void> {
+  await ensureTeamAdminIdsPersisted(teamId);
+  const admin = await isTeamAdmin(teamId, actorUid);
+  if (!admin) throw new Error('Only team admin can edit equipment');
+
+  const all = await listEquipment(teamId);
+  const normalized = updates.serialNumber.trim().toLowerCase();
+  for (const item of all) {
+    if (item.id !== equipmentId && item.serialNumber.trim().toLowerCase() === normalized) {
+      throw new Error('Serial number already exists');
+    }
+  }
+
+  await updateDoc(equipmentRef(teamId, equipmentId), {
+    name: updates.name.trim(),
+    serialNumber: updates.serialNumber.trim(),
+    updatedBy: actorUid,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteEquipment(teamId: string, equipmentId: string, actorUid: string): Promise<void> {
+  await ensureTeamAdminIdsPersisted(teamId);
+  const admin = await isTeamAdmin(teamId, actorUid);
+  if (!admin) throw new Error('Only team admin can delete equipment');
+
+  await deleteDoc(equipmentRef(teamId, equipmentId));
 }

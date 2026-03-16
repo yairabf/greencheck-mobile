@@ -17,6 +17,17 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid in teamDoc(teamId).data.memberIds;
     }
 
+    function isTeamAdmin(teamId) {
+      return isSignedIn()
+        && (
+          teamDoc(teamId).data.createdBy == request.auth.uid
+          || (
+            ('adminIds' in teamDoc(teamId).data)
+            && request.auth.uid in teamDoc(teamId).data.adminIds
+          )
+        );
+    }
+
     function inviteDoc(code) {
       return get(/databases/$(database)/documents/teamInvites/$(code));
     }
@@ -144,32 +155,25 @@ service cloud.firestore {
 
       match /equipment/{equipmentId} {
         allow read: if isTeamMember(teamId);
-        allow create: if isTeamMember(teamId)
-          && (
-            !('adminIds' in teamDoc(teamId).data)
-            ? teamDoc(teamId).data.createdBy == request.auth.uid
-            : request.auth.uid in teamDoc(teamId).data.adminIds
-          )
+
+        // Centralized admin authority for equipment management
+        allow create: if isTeamAdmin(teamId)
           && request.resource.data.name is string
           && request.resource.data.serialNumber is string;
 
-        allow update: if isTeamMember(teamId)
-          && (
-            // admin can manage full equipment item
-            (
-              (!('adminIds' in teamDoc(teamId).data)
-                ? teamDoc(teamId).data.createdBy == request.auth.uid
-                : request.auth.uid in teamDoc(teamId).data.adminIds)
-            )
-            // assignee can only update status fields
-            || (
-              resource.data.assignedToUid == request.auth.uid
-              && request.resource.data.name == resource.data.name
-              && request.resource.data.serialNumber == resource.data.serialNumber
-              && request.resource.data.assignedToUid == resource.data.assignedToUid
-            )
+        allow update: if
+          // admin can manage full equipment item regardless of memberIds drift
+          isTeamAdmin(teamId)
+          // assignee can only update status fields
+          || (
+            isSignedIn()
+            && resource.data.assignedToUid == request.auth.uid
+            && request.resource.data.name == resource.data.name
+            && request.resource.data.serialNumber == resource.data.serialNumber
+            && request.resource.data.assignedToUid == resource.data.assignedToUid
           );
-        allow delete: if false;
+
+        allow delete: if isTeamAdmin(teamId);
       }
 
       match /incidents/{incidentId} {

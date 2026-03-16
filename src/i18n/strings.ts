@@ -130,6 +130,10 @@ export const strings = {
   'equipment.noItems': { en: 'No equipment yet', he: 'אין ציוד עדיין' },
   'equipment.created': { en: 'Equipment created.', he: 'פריט ציוד נוצר.' },
   'equipment.updated': { en: 'Equipment updated.', he: 'פריט ציוד עודכן.' },
+  'equipment.deleted': { en: 'Equipment deleted.', he: 'פריט ציוד נמחק.' },
+  'equipment.edit': { en: 'Edit', he: 'ערוך' },
+  'equipment.delete': { en: 'Delete', he: 'מחק' },
+  'equipment.saveItem': { en: 'Save item', he: 'שמור פריט' },
   'equipment.onlyAdmin': { en: 'Only team admin can manage equipment.', he: 'רק מנהל צוות יכול לנהל ציוד.' },
 
   // Create team screen

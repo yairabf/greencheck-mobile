@@ -8,7 +8,7 @@ import { useAuth } from '../services/AuthProvider';
 import { useProfile } from '../services/ProfileProvider';
 import { getTeamMembers, type TeamMember } from '../services/teamMembers';
 import { assignTeamAdmin, removeTeamMember, revokeTeamAdmin } from '../services/teamAdmin';
-import { assignEquipment, createEquipment, listEquipment, type EquipmentItem } from '../services/equipment';
+import { assignEquipment, createEquipment, deleteEquipment, editEquipment, listEquipment, type EquipmentItem } from '../services/equipment';
 import { useT } from '../i18n';
 
 export function TeamManagementScreen() {
@@ -25,6 +25,11 @@ export function TeamManagementScreen() {
   const [serial, setSerial] = useState('');
   const [busyCreateEquipment, setBusyCreateEquipment] = useState(false);
   const [assignModalItemId, setAssignModalItemId] = useState<string | null>(null);
+  const [editItemId, setEditItemId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editSerial, setEditSerial] = useState('');
+  const [busyEdit, setBusyEdit] = useState(false);
+  const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [section, setSection] = useState<'teammates' | 'equipment'>('teammates');
@@ -81,6 +86,39 @@ export function TeamManagementScreen() {
       await loadAll();
     } catch (e: any) {
       setError(e?.message || t('common.failedAction'));
+    }
+  }
+
+  async function onSaveEdit() {
+    if (!teamId || !user || !editItemId) return;
+    setBusyEdit(true);
+    setError(null);
+    setMsg(null);
+    try {
+      await editEquipment(teamId, editItemId, user.uid, { name: editName, serialNumber: editSerial });
+      setMsg(t('equipment.updated'));
+      setEditItemId(null);
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || t('common.failedAction'));
+    } finally {
+      setBusyEdit(false);
+    }
+  }
+
+  async function onDeleteItem(itemId: string) {
+    if (!teamId || !user) return;
+    setBusyDeleteId(itemId);
+    setError(null);
+    setMsg(null);
+    try {
+      await deleteEquipment(teamId, itemId, user.uid);
+      setMsg(t('equipment.deleted'));
+      await loadAll();
+    } catch (e: any) {
+      setError(e?.message || t('common.failedAction'));
+    } finally {
+      setBusyDeleteId(null);
     }
   }
 
@@ -145,16 +183,8 @@ export function TeamManagementScreen() {
     <AppContainer>
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t('team.adminTools')}</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <AppButton
-          label={t('team.tabTeammates')}
-          variant={section === 'teammates' ? 'primary' : 'secondary'}
-          onPress={() => setSection('teammates')}
-        />
-        <AppButton
-          label={t('team.tabEquipment')}
-          variant={section === 'equipment' ? 'primary' : 'secondary'}
-          onPress={() => setSection('equipment')}
-        />
+        <AppButton label={t('team.tabTeammates')} variant={section === 'teammates' ? 'primary' : 'secondary'} onPress={() => setSection('teammates')} />
+        <AppButton label={t('team.tabEquipment')} variant={section === 'equipment' ? 'primary' : 'secondary'} onPress={() => setSection('equipment')} />
       </View>
 
       {!isAdmin ? <Text style={{ color: colors.danger }}>{t('team.onlyAdminCanManage')}</Text> : null}
@@ -169,23 +199,13 @@ export function TeamManagementScreen() {
             {members.map((m) => (
               <View key={m.uid} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontWeight: '700' }}>
-                    {m.name || t('team.unnamed')} {m.isAdmin ? `(${t('team.adminBadge')})` : ''}
-                  </Text>
+                  <Text style={{ color: colors.text, fontWeight: '700' }}>{m.name || t('team.unnamed')} {m.isAdmin ? `(${t('team.adminBadge')})` : ''}</Text>
                   <Text style={{ color: colors.muted, fontSize: 12 }}>{m.phone || t('team.noPhone')}</Text>
                 </View>
                 {isAdmin && m.uid !== user?.uid ? (
                   <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <AppButton
-                      label={busyAdminUid === m.uid ? t('common.loading') : (m.isAdmin ? t('team.revokeAdmin') : t('team.assignAdmin'))}
-                      variant="secondary"
-                      onPress={() => void onToggleAdmin(m.uid, !m.isAdmin)}
-                    />
-                    <AppButton
-                      label={busyRemoveUid === m.uid ? t('common.loading') : '🗑️'}
-                      variant="danger"
-                      onPress={() => void onRemove(m.uid)}
-                    />
+                    <AppButton label={busyAdminUid === m.uid ? t('common.loading') : (m.isAdmin ? t('team.revokeAdmin') : t('team.assignAdmin'))} variant="secondary" onPress={() => void onToggleAdmin(m.uid, !m.isAdmin)} />
+                    <AppButton label={busyRemoveUid === m.uid ? t('common.loading') : '🗑️'} variant="danger" onPress={() => void onRemove(m.uid)} />
                   </View>
                 ) : null}
               </View>
@@ -207,7 +227,11 @@ export function TeamManagementScreen() {
               <Text style={{ color: colors.text, fontWeight: '700' }}>{it.name}</Text>
               <Text style={{ color: colors.muted }}>{it.serialNumber}</Text>
               <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>
-              <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
+                <AppButton label={t('equipment.edit')} variant="secondary" onPress={() => { setEditItemId(it.id); setEditName(it.name); setEditSerial(it.serialNumber); }} />
+                <AppButton label={busyDeleteId === it.id ? t('common.loading') : t('equipment.delete')} variant="danger" onPress={() => void onDeleteItem(it.id)} />
+              </View>
             </View>
           ))}
 
@@ -217,7 +241,11 @@ export function TeamManagementScreen() {
               <Text style={{ color: colors.text, fontWeight: '700' }}>{it.name}</Text>
               <Text style={{ color: colors.muted }}>{it.serialNumber}</Text>
               <Text style={{ color: colors.muted }}>{t('equipment.assignTo')}: {members.find((m) => m.uid === it.assignedToUid)?.name || t('equipment.unassigned')}</Text>
-              <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <AppButton label={t('equipment.assignTo')} variant="secondary" onPress={() => setAssignModalItemId(it.id)} />
+                <AppButton label={t('equipment.edit')} variant="secondary" onPress={() => { setEditItemId(it.id); setEditName(it.name); setEditSerial(it.serialNumber); }} />
+                <AppButton label={busyDeleteId === it.id ? t('common.loading') : t('equipment.delete')} variant="danger" onPress={() => void onDeleteItem(it.id)} />
+              </View>
             </View>
           ))}
 
@@ -225,28 +253,23 @@ export function TeamManagementScreen() {
             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 16 }}>
               <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, gap: 8 }}>
                 <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>{t('equipment.chooseAssignee')}</Text>
-                <AppButton
-                  label={t('equipment.unassigned')}
-                  variant="secondary"
-                  onPress={() => {
-                    if (!assignModalItemId) return;
-                    void onAssign(assignModalItemId, null);
-                    setAssignModalItemId(null);
-                  }}
-                />
+                <AppButton label={t('equipment.unassigned')} variant="secondary" onPress={() => { if (!assignModalItemId) return; void onAssign(assignModalItemId, null); setAssignModalItemId(null); }} />
                 {members.map((m) => (
-                  <AppButton
-                    key={`assignee-${m.uid}`}
-                    label={m.name || t('team.unnamed')}
-                    variant="secondary"
-                    onPress={() => {
-                      if (!assignModalItemId) return;
-                      void onAssign(assignModalItemId, m.uid);
-                      setAssignModalItemId(null);
-                    }}
-                  />
+                  <AppButton key={`assignee-${m.uid}`} label={m.name || t('team.unnamed')} variant="secondary" onPress={() => { if (!assignModalItemId) return; void onAssign(assignModalItemId, m.uid); setAssignModalItemId(null); }} />
                 ))}
                 <AppButton label={t('equipment.close')} variant="danger" onPress={() => setAssignModalItemId(null)} />
+              </View>
+            </View>
+          </Modal>
+
+          <Modal visible={!!editItemId} transparent animationType="fade" onRequestClose={() => setEditItemId(null)}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 16 }}>
+              <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, gap: 8 }}>
+                <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>{t('equipment.edit')}</Text>
+                <TextInput style={{ backgroundColor: colors.cardAlt, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.name')} placeholderTextColor={colors.muted} value={editName} onChangeText={setEditName} />
+                <TextInput style={{ backgroundColor: colors.cardAlt, color: colors.text, borderRadius: 8, padding: 10 }} placeholder={t('equipment.serial')} placeholderTextColor={colors.muted} value={editSerial} onChangeText={setEditSerial} />
+                <AppButton label={busyEdit ? t('common.loading') : t('equipment.saveItem')} onPress={() => void onSaveEdit()} />
+                <AppButton label={t('equipment.close')} variant="danger" onPress={() => setEditItemId(null)} />
               </View>
             </View>
           </Modal>
