@@ -1,0 +1,62 @@
+name: iOS Build & Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo & EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # Runs the actual Xcode build on GitHub's macOS machine
+      # --local means it does NOT send to EAS servers (avoids EAS limits)
+      # EAS is only used to fetch Apple signing credentials
+      - name: Build iOS app locally on GitHub's machine
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build \
+            --platform ios \
+            --profile production \
+            --non-interactive \
+            --local \
+            --output ./build/greencheck.ipa
+
+      - name: Upload IPA as artifact (for inspection)
+        uses: actions/upload-artifact@v4
+        with:
+          name: greencheck-ios-${{ github.ref_name }}
+          path: ./build/greencheck.ipa
+          retention-days: 30
+
+      # Only submits to App Store when deploying a version tag (e.g. v1.0.0)
+      - name: Submit to App Store / TestFlight
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas submit \
+            --platform ios \
+            --path ./build/greencheck.ipa \
+            --non-interactive
